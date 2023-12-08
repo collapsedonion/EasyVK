@@ -26,7 +26,15 @@ target_link_libraries(easy_vulkan ${Vulkan_LIBRARY})
 project(easy_vulkan_test)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
 add_executable(easy_vulkan_test ${CMAKE_SOURCE_DIR}/test/source/main.cpp)
-target_include_directories(easy_vulkan_test PRIVATE ${CMAKE_SOURCE_DIR}/EasyVulkan/include /opt/homebrew/include)
+target_include_directories(easy_vulkan_test PRIVATE ${CMAKE_SOURCE_DIR}/EasyVulkan/include ${Vulkan_INCLUDE_DIR})
+
+if(APPLE)
+target_include_directories(easy_vulkan_test PRIVATE /usr/local/include /opt/homebrew/include)
 target_link_directories(easy_vulkan_test PRIVATE /usr/local/lib/ /opt/homebrew/lib)
-target_link_libraries(easy_vulkan_test easy_vulkan glfw)
-target_include_directories(easy_vulkan_test PRIVATE /usr/local/include)
+elseif(WIN32)
+target_include_directories(easy_vulkan_test PRIVATE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/include)
+target_link_directories(easy_vulkan_test PRIVATE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lib)
+endif()
+
+target_link_libraries(easy_vulkan_test easy_vulkan glfw3)
+
