@@ -12,11 +12,16 @@ FILE(GLOB EASY_VULKAN_SOURCE ${EASY_VULKAN_PATH}/source/*.cpp)
 
 add_library(easy_vulkan ${EASY_VULKAN_SOURCE})
 
+find_package(Vulkan REQUIRED)
+
+if(NOT Vulkan_FOUND)
+    message(ERROR "Failed to find Vulkan lib")
+endif()
+
 target_include_directories(easy_vulkan PRIVATE ${CMAKE_SOURCE_DIR}/EasyVulkan/include/)
 target_include_directories(easy_vulkan PRIVATE ${CMAKE_SOURCE_DIR}/EasyVulkan/include/EasyVulkan)
-target_include_directories(easy_vulkan PRIVATE /usr/local/include)
-target_link_directories(easy_vulkan PRIVATE /usr/local/lib/)
-target_link_libraries(easy_vulkan vulkan)
+target_include_directories(easy_vulkan PRIVATE ${Vulkan_INCLUDE_DIRS})
+target_link_libraries(easy_vulkan ${Vulkan_LIBRARY})
 
 project(easy_vulkan_test)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
