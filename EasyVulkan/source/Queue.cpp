@@ -30,6 +30,11 @@ EasyVK::CommandPool EasyVK::Queue::createCommandPool()
     return pool;
 }
 
+VkResult EasyVK::Queue::wait()
+{
+    return vkQueueWaitIdle(_queue);
+}
+
 bool EasyVK::Queue::isValid()
 {
     return _queue != VK_NULL_HANDLE;

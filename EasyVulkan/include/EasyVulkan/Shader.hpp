@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <vulkan/vulkan.h>
+#include <string>
 
 namespace EasyVK{
 
@@ -24,8 +25,8 @@ namespace EasyVK{
         bool isReady();
         VkResult getResult();
         VkShaderModule getModule();
-        VkPipelineShaderStageCreateInfo getFragmentStage(std::string name);
-        VkPipelineShaderStageCreateInfo getVertexStage(std::string name);
+        VkPipelineShaderStageCreateInfo getFragmentStage(const char* name);
+        VkPipelineShaderStageCreateInfo getVertexStage(const char* name);
 
         void destroy();
         

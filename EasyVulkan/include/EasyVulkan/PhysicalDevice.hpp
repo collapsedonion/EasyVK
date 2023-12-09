@@ -53,7 +53,7 @@ namespace EasyVK{
         bool isFound();
 
         unsigned int findQueue(QueueThat that, std::vector<unsigned int> skip = {});
-        unsigned int findPresentQueue();
+        unsigned int findPresentQueue(std::vector<unsigned int> skip = {});
 
         std::vector<std::string> supportedExtensions();
 

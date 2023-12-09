@@ -96,10 +96,36 @@ int main(){
         {colorAttachment}
     );
 
+    auto imageAvailable = logDevice->createSemaphore();
+    auto renderFence = logDevice->createFence(true);
+    auto renderFinished = logDevice->createSemaphore();
+
     EasyVK::CommandBuffer commandBuffer = commandPool.createCommandBuffer();
 
     while(!glfwWindowShouldClose(window)){
         glfwPollEvents();
+
+        renderFence.waitForMe(UINT64_MAX);
+        auto frameId = swapChain.nextImageId(UINT64_MAX, imageAvailable);
+        renderFence.reset();
+
+        commandBuffer.reset();
+        commandBuffer.begin();
+        commandBuffer.beginRenderPass(
+            swapChain.getRenderPass(), 
+            swapChain.getFramebuffers()[frameId.second],
+            {{0,0}, swapChain.getExtent()},
+            {{1.0f,0.0f,0.0f}});
+        commandBuffer.bindGraphicsPipeline(graphicsPipeline);
+        commandBuffer.setViewports({swapChain.getViewport()});
+        commandBuffer.setScissors({{{0,0}, {swapChain.getExtent().height, swapChain.getExtent().width}}});
+        commandBuffer.draw(3, 1);
+        commandBuffer.endRenderPass();
+        commandBuffer.end();
+
+        graphicsQueue.submit({commandBuffer}, {}, {imageAvailable}, {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}, {renderFinished});
+
+        presentQueue.presentSwapChain(swapChain, frameId.second, {renderFinished});
     }
 
     commandBuffer.destroy();

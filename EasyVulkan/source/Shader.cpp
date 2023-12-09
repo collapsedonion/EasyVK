@@ -1,6 +1,7 @@
 #include <EasyVulkan/Shader.hpp>
 #include <EasyVulkan/LogicalDevice.hpp>
 #include "Shader.hpp"
+#include <string>
 
 EasyVK::Shader::Shader(LogicalDevice *device)
 {
@@ -37,23 +38,23 @@ VkShaderModule EasyVK::Shader::getModule()
     return _module;
 }
 
-VkPipelineShaderStageCreateInfo EasyVK::Shader::getFragmentStage(std::string name)
+VkPipelineShaderStageCreateInfo EasyVK::Shader::getFragmentStage(const char* name)
 {
     VkPipelineShaderStageCreateInfo ci{};
     ci.module = _module;
     ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    ci.pName = name.data();
+    ci.pName = name;
     ci.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     return ci;
 }
 
-VkPipelineShaderStageCreateInfo EasyVK::Shader::getVertexStage(std::string name)
+VkPipelineShaderStageCreateInfo EasyVK::Shader::getVertexStage(const char* name)
 {
     VkPipelineShaderStageCreateInfo ci{};
     ci.module = _module;
     ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    ci.pName = name.data();
+    ci.pName = name;
     ci.stage = VK_SHADER_STAGE_VERTEX_BIT;
 
     return ci;

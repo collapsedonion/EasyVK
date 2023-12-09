@@ -1,6 +1,7 @@
 #include "LogicalDevice.hpp"
 #include <map>
 #include <EasyVulkan/SwapChain.hpp>
+#include <stdexcept>
 
 EasyVK::LogicalDevice::LogicalDevice(const PhysicalDevice &device)
 {
@@ -25,7 +26,18 @@ void EasyVK::LogicalDevice::init(const std::vector<QueueProps> &queues)
     for(auto queue : queues){
         unsigned int index;
         if(queue.present){
-            index = _my_device.findPresentQueue();
+            std::vector<unsigned int> skip;
+            while(true){
+                index = _my_device.findPresentQueue(skip);
+                if(queuesToCreate.count(index)){
+                    ENUMERATE_DEVICE_QUEUES(_my_device.getDevice(), qC,qP);
+                    if(qP[index].queueCount < queuesToCreate[index].count + 1){
+                        skip.push_back(index);
+                        continue;
+                    }
+                }
+                break;
+            }
         }else{
             std::vector<unsigned int> skip = {};
 
@@ -35,7 +47,17 @@ void EasyVK::LogicalDevice::init(const std::vector<QueueProps> &queues)
                 }
             }
 
-            index = _my_device.findQueue(queue.flags, skip);
+            while(true){
+                index = _my_device.findQueue(queue.flags, skip);
+                if(queuesToCreate.count(index)){
+                    ENUMERATE_DEVICE_QUEUES(_my_device.getDevice(),qC,qP);
+                    if(qP[index].queueCount < queuesToCreate[index].count + 1){
+                        skip.push_back(index);
+                        continue;
+                    }
+                }
+                break;
+            }
         }
 
         if(!queuesToCreate.contains(index)){
@@ -55,17 +77,17 @@ void EasyVK::LogicalDevice::init(const std::vector<QueueProps> &queues)
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = elem.first;
         queueCreateInfo.queueCount = elem.second.count;
-        queueCreateInfo.pQueuePriorities = elem.second.priorieties.data();
+        queueCreateInfo.pQueuePriorities = queuesToCreate[elem.first].priorieties.data();
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
     VkDeviceCreateInfo createInfo{};
     VkPhysicalDeviceFeatures deviceFeatures{};
 
-    auto extensions = _my_device.supportedExtensions();
+    std::vector<std::string> extensions = _my_device.supportedExtensions();
 
     std::vector<const char*> c_extensions;
-    for(auto elem : extensions){
+    for(auto& elem : extensions){
         c_extensions.push_back(elem.data());
     }
 

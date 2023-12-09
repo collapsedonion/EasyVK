@@ -1,5 +1,7 @@
 /build
 /.vscode
+*/Debug*
 .DS_Store
 
 *.a
+*.dll

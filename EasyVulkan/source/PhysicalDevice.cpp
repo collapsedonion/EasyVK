@@ -157,13 +157,24 @@ unsigned int EasyVK::PhysicalDevice::findQueue(QueueThat that, std::vector<unsig
     return 0;
 }
 
-unsigned int EasyVK::PhysicalDevice::findPresentQueue()
+unsigned int EasyVK::PhysicalDevice::findPresentQueue(std::vector<unsigned int> skip)
 {
     DEVICE_QUEUES_COUNT(_device, queuesCount);
 
     for(unsigned int i = 0; i < queuesCount; i++){
         if(canThisQueuePresent(_surface, _device, i)){
-            return i;
+            bool inSkip = false;
+            
+            for(auto elem : skip){
+                if(elem == i){
+                    inSkip = true;
+                    break;
+                }
+            }
+
+            if(!inSkip){
+                return i;
+            }
         }
     }
 

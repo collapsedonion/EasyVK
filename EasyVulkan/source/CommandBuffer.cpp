@@ -56,13 +56,14 @@ VkResult EasyVK::CommandBuffer::begin(VkCommandBufferUsageFlags flags)
 void EasyVK::CommandBuffer::beginRenderPass(RenderPass renderPass, Framebuffer framebuffer, VkRect2D renderArea, std::vector<VkClearValue> clearColors)
 {
     VkRenderPassBeginInfo RBI{};
+    RBI.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     RBI.framebuffer = framebuffer.getFramebuffer();
     RBI.renderArea = renderArea;
     RBI.renderPass = renderPass.getRenderPass();
     RBI.pClearValues = clearColors.data();
     RBI.clearValueCount = clearColors.size();
 
-    vkCmdBeginRenderPass(_buffer, &RBI, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(_buffer, &RBI, VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_EXT);
 }
 
 void EasyVK::CommandBuffer::endRenderPass()

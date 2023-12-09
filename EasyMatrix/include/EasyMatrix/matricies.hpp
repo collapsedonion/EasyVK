@@ -100,16 +100,16 @@ namespace EasyMatrix{
     typedef Matrix<int, 3,3> Matrix3x3i;
     typedef Matrix<int, 4,4> Matrix4x4i;
 
-    inline Matrix4x4f createOrthographicProjection(float left, float right, float top, float bottom, float near, float far){
+    inline Matrix4x4f createOrthographicProjection(float left, float right, float top, float bottom, float nearDist, float farDist){
         Matrix4x4f res{};
 
         res[0][0] = 2 / (right - left);
         res[1][1] = 2 / (top - bottom);
-        res[2][2] = 2 / (far - near);
+        res[2][2] = 2 / (farDist - nearDist);
 
         res[3][0] = -((right + left) / (right - left));
         res[3][1] = -((top + bottom) / (top - bottom));
-        res[3][2] = -((far + near) / (far-near));
+        res[3][2] = -((farDist + nearDist) / (farDist-nearDist));
         res[3][3] = 1;
 
         return res;
@@ -201,14 +201,14 @@ namespace EasyMatrix{
         return res;
     }
 
-    inline Matrix4x4f createPerspectiveProjection(float fov, float aspect, float near, float far){
+    inline Matrix4x4f createPerspectiveProjection(float fov, float aspect, float nearDist, float farDist){
         Matrix4x4f res{};
 
         res[0][0] = (1 / tan(fov / 2)) / aspect;
         res[1][1] = 1 / tan(fov / 2);
-        res[2][2] = (far + near) / far - near;
+        res[2][2] = (farDist + nearDist) / (farDist - nearDist);
         res[2][3] = 1;
-        res[3][2] = -(2 * far * near) / far - near;
+        res[3][2] = -(2 * farDist * nearDist) / (farDist - nearDist);
 
         return res;
     }
