@@ -67,7 +67,7 @@ void EasyVK::SwapChain::init(
     _presentMode = choosePresentMode(presentModes, prefered_presentMode);
     _format = chooseFormat(formats, prefered_format);
 
-    uint32_t image_count = capabilities.minImageCount + 1;
+    uint32_t image_count = capabilities.minImageCount + 2;
     if(capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount){
         image_count = capabilities.maxImageCount;
     }
@@ -82,7 +82,7 @@ void EasyVK::SwapChain::init(
     swapchainCreateInfo.imageColorSpace = _format.colorSpace;
     swapchainCreateInfo.imageExtent = _extent;
     swapchainCreateInfo.imageArrayLayers = imageArrayLayers;
-    swapchainCreateInfo.flags = flags;
+    swapchainCreateInfo.imageUsage = flags;
 
     uint32_t queueFamilies[2] = {_device->getQueue(QueueThat::GRAPHICS).getFamily(), _device->getPresentQueue().getFamily()};
 

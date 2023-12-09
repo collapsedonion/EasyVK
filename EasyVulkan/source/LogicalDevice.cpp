@@ -31,7 +31,7 @@ void EasyVK::LogicalDevice::init(const std::vector<QueueProps> &queues)
                 index = _my_device.findPresentQueue(skip);
                 if(queuesToCreate.count(index)){
                     ENUMERATE_DEVICE_QUEUES(_my_device.getDevice(), qC,qP);
-                    if(qP[index].queueCount < 2){
+                    if(qP[index].queueCount < queuesToCreate[index].count + 1){
                         skip.push_back(index);
                         continue;
                     }
@@ -47,7 +47,17 @@ void EasyVK::LogicalDevice::init(const std::vector<QueueProps> &queues)
                 }
             }
 
-            index = _my_device.findQueue(queue.flags, skip);
+            while(true){
+                index = _my_device.findQueue(queue.flags, skip);
+                if(queuesToCreate.count(index)){
+                    ENUMERATE_DEVICE_QUEUES(_my_device.getDevice(),qC,qP);
+                    if(qP[index].queueCount < queuesToCreate[index].count + 1){
+                        skip.push_back(index);
+                        continue;
+                    }
+                }
+                break;
+            }
         }
 
         if(!queuesToCreate.contains(index)){

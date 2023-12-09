@@ -27,6 +27,7 @@ namespace EasyVK{
         bool getCanPresent();
         unsigned int getFamily();
         CommandPool createCommandPool();
+        VkResult wait();
         bool isValid();
         LogicalDevice getLogicalDevice();
         VkResult submit(

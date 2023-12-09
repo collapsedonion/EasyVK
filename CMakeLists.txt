@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 set(CMAKE_CXX_STANDARD 20)
 
+if(WIN32)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
 set(EASY_VULKAN_PATH ${CMAKE_SOURCE_DIR}/EasyVulkan)
 
 project(easy_vulkan)
@@ -21,7 +25,7 @@ endif()
 target_include_directories(easy_vulkan PRIVATE ${CMAKE_SOURCE_DIR}/EasyVulkan/include/)
 target_include_directories(easy_vulkan PRIVATE ${CMAKE_SOURCE_DIR}/EasyVulkan/include/EasyVulkan)
 target_include_directories(easy_vulkan PRIVATE ${Vulkan_INCLUDE_DIRS})
-target_link_libraries(easy_vulkan ${Vulkan_LIBRARY})
+target_link_libraries(easy_vulkan PUBLIC ${Vulkan_LIBRARY})
 
 project(easy_vulkan_test)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/test)
@@ -36,5 +40,5 @@ target_include_directories(easy_vulkan_test PRIVATE ${CMAKE_RUNTIME_OUTPUT_DIREC
 target_link_directories(easy_vulkan_test PRIVATE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lib)
 endif()
 
-target_link_libraries(easy_vulkan_test easy_vulkan glfw3)
+target_link_libraries(easy_vulkan_test PUBLIC easy_vulkan glfw3)
 
