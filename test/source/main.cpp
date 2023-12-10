@@ -123,7 +123,7 @@ int main(){
         commandBuffer.endRenderPass();
         commandBuffer.end();
 
-        graphicsQueue.submit({commandBuffer}, {}, {imageAvailable}, {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}, {renderFinished});
+        graphicsQueue.submit({commandBuffer}, {renderFence}, {imageAvailable}, {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}, {renderFinished});
 
         presentQueue.presentSwapChain(swapChain, frameId.second, {renderFinished});
     }

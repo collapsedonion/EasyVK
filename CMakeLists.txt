@@ -35,10 +35,11 @@ target_include_directories(easy_vulkan_test PRIVATE ${CMAKE_SOURCE_DIR}/EasyVulk
 if(APPLE)
 target_include_directories(easy_vulkan_test PRIVATE /usr/local/include /opt/homebrew/include)
 target_link_directories(easy_vulkan_test PRIVATE /usr/local/lib/ /opt/homebrew/lib)
+target_link_libraries(easy_vulkan_test PUBLIC easy_vulkan glfw)
 elseif(WIN32)
 target_include_directories(easy_vulkan_test PRIVATE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/include)
 target_link_directories(easy_vulkan_test PRIVATE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lib)
+target_link_libraries(easy_vulkan_test PUBLIC easy_vulkan glfw3)
 endif()
 
-target_link_libraries(easy_vulkan_test PUBLIC easy_vulkan glfw3)
 
