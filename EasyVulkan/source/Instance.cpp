@@ -1,16 +1,21 @@
 #include "EasyVulkan/Instance.hpp"
 #include "EasyVulkan/PhysicalDevice.hpp"
 
+const std::vector<const char*> validationLayers = {
+    "VK_LAYER_KHRONOS_validation"
+};
+
 namespace EasyVK{
-Instance::Instance(
-    const std::string& application_name, 
-    const std::string& engine_name,
-    const Version& application_version, 
-    const Version& engine_version,
-    const Version& vulkan_api_version,
-    const std::vector<const char*>& enabled_extensions
+    Instance::Instance(
+        const std::string& application_name,
+        const std::string& engine_name,
+        const Version& application_version,
+        const Version& engine_version,
+        const Version& vulkan_api_version,
+        const std::vector<const char*>& enabled_extensions,
+        bool enable_validation_layer
 ){
-    init(application_name, engine_name, application_version, engine_version, vulkan_api_version, enabled_extensions);
+    init(application_name, engine_name, application_version, engine_version, vulkan_api_version, enabled_extensions, enable_validation_layer);
 }
 
 Instance::Instance()
@@ -27,12 +32,13 @@ VkResult Instance::getResult()
     return _create_result;
 }
 void Instance::init(
-    const std::string &application_name, 
-    const std::string &engine_name, 
-    const Version &application_version, 
-    const Version &engine_version, 
-    const Version &vulkan_api_version, 
-    std::vector<const char *> enabled_extensions
+    const std::string& application_name,
+    const std::string& engine_name,
+    const Version& application_version,
+    const Version& engine_version,
+    const Version& vulkan_api_version,
+    std::vector<const char*> enabled_extensions,
+    bool enable_Validation_Layers
 )
 {
     destroy();
@@ -49,7 +55,14 @@ void Instance::init(
 
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &applicationInfo;
-    createInfo.enabledLayerCount = 0;
+
+    if (enable_Validation_Layers) {
+        createInfo.ppEnabledLayerNames = validationLayers.data();
+        createInfo.enabledLayerCount = validationLayers.size();
+    }
+    else {
+        createInfo.enabledLayerCount = 0;
+    }
 
     #ifdef __APPLE__
         createInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;

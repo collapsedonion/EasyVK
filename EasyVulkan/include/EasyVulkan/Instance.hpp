@@ -23,7 +23,8 @@ public:
         const Version& application_version, 
         const Version& engine_version,
         const Version& vulkan_api_version,
-        const std::vector<const char*>& enabled_extensions
+        const std::vector<const char*>& enabled_extensions,
+        bool enable_validation_layer
     );
 
     Instance();
@@ -37,7 +38,8 @@ public:
         const Version& application_version, 
         const Version& engine_version,
         const Version& vulkan_api_version,
-        std::vector<const char*> enabled_extensions
+        std::vector<const char*> enabled_extensions,
+        bool enable_Validation_Layers
     );
 
     VkInstance getHandledInstance();

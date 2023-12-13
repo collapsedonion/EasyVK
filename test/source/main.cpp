@@ -48,7 +48,8 @@ int main(){
         {1,0,0},
         {0,0,0},
         {1,0,0},
-        extensions   
+        extensions,
+        true
     );
 
     VkResult result = glfwCreateWindowSurface(vkInstance.getHandledInstance(), window, nullptr, &surface);
