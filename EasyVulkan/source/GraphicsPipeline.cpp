@@ -1,6 +1,5 @@
 #include <EasyVulkan/GraphicsPipeline.hpp>
 #include <EasyVulkan/LogicalDevice.hpp>
-#include "GraphicsPipeline.hpp"
 
 EasyVK::GraphicsPipeline::GraphicsPipeline(LogicalDevice *logicalDevice)
 {

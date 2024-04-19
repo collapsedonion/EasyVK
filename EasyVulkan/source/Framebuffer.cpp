@@ -1,6 +1,5 @@
 #include <EasyVulkan/Framebuffer.hpp>
 #include <EasyVulkan/LogicalDevice.hpp>
-#include "Framebuffer.hpp"
 
 EasyVK::Framebuffer::Framebuffer(LogicalDevice * device)
 {

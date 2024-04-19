@@ -1,6 +1,5 @@
 #include <EasyVulkan/ImageView.hpp>
 #include <EasyVulkan/LogicalDevice.hpp>
-#include "ImageView.hpp"
 
 EasyVK::ImageView::ImageView(LogicalDevice* device)
 {

@@ -1,6 +1,6 @@
 #include <set>
-#include "PhysicalDevice.hpp"
-#include "LogicalDevice.hpp"
+#include <EasyVulkan/PhysicalDevice.hpp>
+#include <EasyVulkan/LogicalDevice.hpp>
 
 bool EasyVK::PhysicalDevice::supportExtensions(
     const VkPhysicalDevice &device, 

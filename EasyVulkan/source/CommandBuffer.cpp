@@ -1,6 +1,5 @@
 #include <EasyVulkan/CommandBuffer.hpp>
 #include <EasyVulkan/CommandPool.hpp>
-#include "CommandBuffer.hpp"
 
 EasyVK::CommandBuffer::CommandBuffer(LogicalDevice *device, CommandPool *pool)
 {

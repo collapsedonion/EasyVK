@@ -1,4 +1,4 @@
-#include "Queue.hpp"
+#include <EasyVulkan/Queue.hpp>
 #include <EasyVulkan/CommandPool.hpp>
 #include <EasyVulkan/CommandBuffer.hpp>
 #include <EasyVulkan/SwapChain.hpp>

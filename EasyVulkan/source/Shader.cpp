@@ -1,6 +1,5 @@
 #include <EasyVulkan/Shader.hpp>
 #include <EasyVulkan/LogicalDevice.hpp>
-#include "Shader.hpp"
 #include <string>
 
 EasyVK::Shader::Shader(LogicalDevice *device)

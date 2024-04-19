@@ -1,6 +1,5 @@
 #include <EasyVulkan/DescriptorPool.hpp>
 #include <EasyVulkan/LogicalDevice.hpp>
-#include "DescriptorPool.hpp"
 
 EasyVK::DescriptorPool::DescriptorPool(LogicalDevice *device, uint32_t maxSize, std::vector<VkDescriptorType> types, std::vector<uint32_t> count)
 {

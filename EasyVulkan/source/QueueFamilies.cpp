@@ -1,6 +1,5 @@
-#include "EasyVulkan/QueueFamilies.hpp"
 #include <vector>
-#include "QueueFamilies.hpp"
+#include <EasyVulkan/QueueFamilies.hpp>
 
 namespace EasyVK{
 

@@ -1,7 +1,5 @@
 #include <EasyVulkan/Image.hpp>
-#include <LogicalDevice.hpp>
-#include "Image.hpp"
-
+#include <EasyVulkan/LogicalDevice.hpp>
 
 BASIC_METHOD__I(Image)
 

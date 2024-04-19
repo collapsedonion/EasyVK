@@ -1,6 +1,5 @@
 #include <EasyVulkan/Semaphore.hpp>
 #include <EasyVulkan/LogicalDevice.hpp>
-#include "Semaphore.hpp"
 
 EasyVK::Semaphore::Semaphore(LogicalDevice *device)
 {

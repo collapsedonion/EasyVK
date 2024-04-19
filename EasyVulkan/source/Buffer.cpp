@@ -1,7 +1,6 @@
 #include <EasyVulkan/Buffer.hpp>
 #include <EasyVulkan/LogicalDevice.hpp>
 #include <stdexcept>
-#include "Buffer.hpp"
 
 EasyVK::Buffer::Buffer(LogicalDevice *device, uint64_t size, bool deviceAccesible, VkBufferUsageFlags usage)
 {

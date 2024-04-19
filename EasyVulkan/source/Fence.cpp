@@ -1,6 +1,5 @@
 #include <EasyVulkan/Fence.hpp>
 #include <EasyVulkan/LogicalDevice.hpp>
-#include "Fence.hpp"
 
 EasyVK::Fence::Fence(LogicalDevice *device, bool startSignaled)
 {

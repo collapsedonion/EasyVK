@@ -1,7 +1,7 @@
 #include <EasyVulkan/CommandPool.hpp>
 #include <EasyVulkan/Queue.hpp>
 #include <EasyVulkan/LogicalDevice.hpp>
-#include "CommandPool.hpp"
+
 
 EasyVK::CommandPool::CommandPool(Queue queue, LogicalDevice *device)
 {

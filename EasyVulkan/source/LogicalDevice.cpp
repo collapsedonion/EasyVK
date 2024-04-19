@@ -1,4 +1,4 @@
-#include "LogicalDevice.hpp"
+#include <EasyVulkan/LogicalDevice.hpp>
 #include <map>
 #include <EasyVulkan/SwapChain.hpp>
 #include <stdexcept>

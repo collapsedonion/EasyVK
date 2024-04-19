@@ -1,4 +1,3 @@
-#include "SwapChain.hpp"
 #include <EasyVulkan/SwapChain.hpp>
 #include <EasyVulkan/RenderPass.hpp>
 
