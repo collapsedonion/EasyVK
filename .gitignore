@@ -2,8 +2,13 @@
 /.vscode
 */Debug*
 .DS_Store
+/test
 
 *.a
 *.dll
 *.exe
 /test/easy_vulkan_test
+/.idea/.gitignore
+/cmake-build-debug
+/.idea
+
