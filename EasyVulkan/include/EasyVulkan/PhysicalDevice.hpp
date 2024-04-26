@@ -1,69 +1,43 @@
-#pragma once
-#include <vulkan/vulkan.h>
-#include <EasyVulkan/QueueFamilies.hpp>
-#include <EasyVulkan/Instance.hpp>
-#include <string>
+//
+// Created by Роман  Тимофеев on 20.04.2024.
+//
+
+#ifndef EASY_VULKAN_TEST_PHYSICALDEVICE_HPP
+#define EASY_VULKAN_TEST_PHYSICALDEVICE_HPP
+#include <vulkan/vulkan.hpp>
+#include <cctype>
+#include <EasyVulkan/DeviceFeatures.hpp>
+#include <EasyVulkan/Device.hpp>
 #include <vector>
 
 namespace EasyVK{
+    class Instance;
 
-    class LogicalDevice;
+    class PhysicalDevice {
+    public:
+        enum DeviceTypeBits{
+            ANY,
+            DISCRETE,
+            INTEGRATED
+        };
 
-    class PhysicalDevice{
+        typedef uint64_t DeviceType;
+
+    public:
+        Device createDevice(vk::SurfaceKHR surface = VK_NULL_HANDLE);
+
     private:
-        Instance _instance;
-        VkPhysicalDevice _device = VK_NULL_HANDLE;
-        VkSurfaceKHR _surface = VK_NULL_HANDLE;
-        std::vector<std::string> _extensions;
-        bool found = false;
+        Features enabledFeatures = 0x0;
+        vk::Instance instance;
+        vk::PhysicalDevice deviceHandler;
+        bool set_up = false;
 
-        static bool supportExtensions(
-            const VkPhysicalDevice& device, 
-            const std::vector<std::string>& extensions
-            );
+    protected:
+        void setupWithDesired(DeviceType type, Features features, vk::Instance instance);
 
-        static bool containsQueue(VkPhysicalDevice device, QueueThat that);
-        static bool containsPresentQueue(VkPhysicalDevice device, VkSurfaceKHR surface);
-
-        PhysicalDevice(Instance instance);
-
-        PhysicalDevice(
-            Instance instance,
-            const std::vector<QueueThat> &supported_families,
-            const std::vector<std::string>& suppoted_extensions,
-            bool can_present,
-            VkSurfaceKHR surface = VK_NULL_HANDLE
-        );        
-    public:
-
-        PhysicalDevice();
-
-        void find(
-            const std::vector<QueueThat> &supported_families,
-            const std::vector<std::string>& suppoted_extensions,
-            bool can_present,
-            VkSurfaceKHR surface = VK_NULL_HANDLE
-        );
-
-        bool containsQueue(QueueThat that);
-        bool containsPresentQueue(VkSurfaceKHR surface);
-        bool containsPresentQueue();
-        bool isThisQueueFamily(unsigned int family, QueueThat that);
-        bool isThisPresentQueueFamily(unsigned int family);
-        bool isFound();
-
-        unsigned int findQueue(QueueThat that, std::vector<unsigned int> skip = {});
-        unsigned int findPresentQueue(std::vector<unsigned int> skip = {});
-
-        std::vector<std::string> supportedExtensions();
-
-        VkSurfaceKHR getSurface();
-        Instance getInstance();
-        VkPhysicalDevice getDevice();
-        LogicalDevice* createLogicalDevice(const std::vector<QueueProps>& queues);
-        
-    public:
+    private:
         friend Instance;
     };
-
 }
+
+#endif //EASY_VULKAN_TEST_PHYSICALDEVICE_HPP

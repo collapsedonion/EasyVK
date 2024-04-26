@@ -1,35 +1,33 @@
-#pragma once
+//
+// Created by Роман  Тимофеев on 22.04.2024.
+//
+
+#ifndef EASY_VULKAN_TEST_SHADER_HPP
+#define EASY_VULKAN_TEST_SHADER_HPP
+#include <vulkan/vulkan.hpp>
+#include <EasyVulkan/Base.hpp>
 #include <vector>
-#include <vulkan/vulkan.h>
-#include <string>
+#include <cctype>
 
 namespace EasyVK{
 
-    class LogicalDevice;
-
-    class Shader{
-    
-    private:
-        LogicalDevice* _device;
-        bool _ready = false;
-        VkResult _result = VK_NOT_READY;
-        VkShaderModule _module; 
-
-        Shader(LogicalDevice *device);
+    class Shader : AutoFree{
 
     public:
-        Shader();
+        ~Shader();
 
-        void init(std::vector<char> source);
+    private:
+        vk::Device device;
+        vk::ShaderModule module;
 
-        bool isReady();
-        VkResult getResult();
-        VkShaderModule getModule();
-        VkPipelineShaderStageCreateInfo getFragmentStage(const char* name);
-        VkPipelineShaderStageCreateInfo getVertexStage(const char* name);
+    public:
+        void setup(vk::Device device, const std::vector<uint32_t>& data);
 
-        void destroy();
-        
-    friend LogicalDevice;
+    private:
+        friend Device;
+        friend ComputePipeline;
+        friend GraphicsPipeline;
     };
 }
+
+#endif //EASY_VULKAN_TEST_SHADER_HPP

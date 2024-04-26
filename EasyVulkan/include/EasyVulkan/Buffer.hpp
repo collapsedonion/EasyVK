@@ -1,40 +1,46 @@
-#pragma once
-#include <vulkan/vulkan.h>
+//
+// Created by Роман  Тимофеев on 22.04.2024.
+//
+
+#ifndef EASY_VULKAN_TEST_BUFFER_HPP
+#define EASY_VULKAN_TEST_BUFFER_HPP
+#include <vulkan/vulkan.hpp>
+#include <EasyVulkan/DeviceResourceInterface.hpp>
+#include <EasyVulkan/Base.hpp>
+#include <vector>
+#include <cctype>
 
 namespace EasyVK{
 
-    class LogicalDevice;
+    class Device;
 
-    class Buffer{
-    
-    private:
-        LogicalDevice* _device;
-        VkBuffer _buffer;
-        VkDeviceMemory _mem;
-        uint64_t _size;
+    class Buffer : AutoFree, public DeviceResource{
 
-        VkResult _result = VK_NOT_READY;
-
-        Buffer(
-            LogicalDevice* device,
-            uint64_t size,
-            bool deviceAccesible,
-            VkBufferUsageFlags usage
-        );
     public:
+        ~Buffer();
 
-        Buffer();
+    private:
+        vk::Device device;
+        vk::Buffer buffer;
+        vk::DeviceMemory allocatedMemory;
+        size_t allocatedSize = 0;
+        bool hostVisible = false;
 
-        VkBuffer getBuffer();
-        VkDeviceMemory getMemory();
-        VkResult getResult();
-        uint32_t getSize();
-        bool isReady();
-        void* map();
-        void unMap();
+    public:
+        void* bind();
+        void unbind();
 
-        void destroy();
-    
-    friend LogicalDevice;
+    protected:
+        void allocate(vk::PhysicalDevice physicalDevice, vk::Device device, size_t size, bool hostVisible, const std::vector<uint32_t> &queueFamilies);
+
+        bool checkResourceTypeCompatability(ResourceType type) override;
+        void bindToDescriptorSet(vk::Device device, vk::DescriptorSet set, ResourceType type, uint32_t binding) override;
+        ResourceType getVerifiedResourceType(EasyVK::DeviceResource::ResourceType type) override;
+
+    private:
+        friend Device;
+        friend CommandBuffer;
     };
 }
+
+#endif //EASY_VULKAN_TEST_BUFFER_HPP

@@ -1,13 +1,41 @@
-#pragma once
+//
+// Created by Роман  Тимофеев on 23.04.2024.
+//
 
-#define BASIC_MEMBERS VkResult _result = VK_NOT_READY;
-
-#define BASIC_METHODS VkResult getResult(); bool isReady(); void destroy();
-
-#define BASIC_METHOD__I(Class) VkResult EasyVK::Class::getResult(){return _result;} bool EasyVK::Class::isReady(){return _result == VK_SUCCESS;}
-
-#define N_EVK namespace EasyVK
+#ifndef EASY_VULKAN_TEST_BASE_HPP
+#define EASY_VULKAN_TEST_BASE_HPP
 
 namespace EasyVK{
-    class LogicalDevice;
-}
+    class Device;
+    class Shader;
+    class ComputePipeline;
+    class Buffer;
+    class CommandBuffer;
+    class RenderPass;
+    class GraphicsPipeline;
+    class GLFWHelper;
+    class SwapChain;
+
+    class AutoFree{
+
+    protected:
+        int* referenceCounter;
+
+    public:
+        AutoFree();
+        AutoFree(const AutoFree& ref);
+        AutoFree(AutoFree&& ref) noexcept;
+
+        AutoFree& operator = (const AutoFree& other);
+
+        AutoFree& operator = (AutoFree&& other) noexcept;
+
+    protected:
+        bool isKilled();
+
+    public:
+        ~AutoFree();
+    };
+};
+
+#endif //EASY_VULKAN_TEST_BASE_HPP

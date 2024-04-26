@@ -1,16 +1,15 @@
-#include <EasyVulkan/Instance.hpp>
-#include <EasyVulkan/PhysicalDevice.hpp>
-#include <EasyVulkan/LogicalDevice.hpp>
-#include <EasyVulkan/SwapChain.hpp>
-#include <EasyVulkan/RenderPass.hpp>
-#include <EasyVulkan/CommandPool.hpp>
-#include <EasyVulkan/Shader.hpp>
-#include <EasyVulkan/GraphicsPipeline.hpp>
 #include <fstream>
+#include <set>
+#include <EasyVulkan/Instance.hpp>
+#include <iostream>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#define EASYVK_GLFW_HELPER
+#include <EasyVulkan/GLFWHelper.hpp>
+#include <EasyMatrix/matricies.hpp>
+#include <EasyMatrix/vectors.hpp>
 
-std::vector<char> readFile(const std::string& filename){
+std::vector<uint32_t> readFile(const std::string& filename){
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if(!file.is_open()){
@@ -18,14 +17,28 @@ std::vector<char> readFile(const std::string& filename){
     }
     
     size_t fileSize = file.tellg();
-    std::vector<char> buffer(fileSize);
+    std::vector<uint32_t> buffer(fileSize);
     file.seekg(0);
-    file.read(buffer.data(), fileSize);
+    file.read((char*)buffer.data(), fileSize);
     
     file.close();
     
     return buffer;
 }
+
+struct Vertex{
+    EasyMatrix::Vector3f position;
+    EasyMatrix::Vector3f color;
+};
+
+std::vector<Vertex> vertexBufferContent = {
+        {-0.5, -0.5, 1.0, 1.0, 0.0, 0.0},
+        {-0.5, 0.5, 1.0, 0.0, 1.0, 0.0},
+        {0.5, -0.5, 1.0, 0.0, 0.0, 1.0},
+        {-0.5, 0.5, 1.0, 0.0, 1.0, 0.0},
+        {0.5, 0.5, 1.0, 0.0, 0.0, 0.0},
+        {0.5, -0.5, 1.0, 0.0, 0.0, 1.0}
+};
 
 int main(){
     glfwInit();
@@ -37,105 +50,103 @@ int main(){
 
     uint32_t glfwExtCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtCount);
-    std::vector<const char*> extensions;
+    std::set<std::string> extensions;
     for(int i = 0; i < glfwExtCount; i++){
-        extensions.push_back(glfwExtensions[i]);
+        extensions.insert(std::string(glfwExtensions[i]));
     }
 
-    EasyVK::Instance vkInstance(
-        "VulkanTest",
-        "No engine",
-        {1,0,0},
-        {0,0,0},
-        {1,0,0},
-        extensions,
-        true
-    );
+    EasyVK::Instance instance = EasyVK::Instance(
+            "TestApp",
+            EasyVK::Instance::V1_0,
+            {"VK_LAYER_KHRONOS_validation"},
+            extensions);
 
-    VkResult result = glfwCreateWindowSurface(vkInstance.getHandledInstance(), window, nullptr, &surface);
+    surface = EasyVK::GLFWHelper::getGLFWSurface(window, instance);
 
-    EasyVK::PhysicalDevice physDevice = vkInstance.getPhysicalDevice(
-        {EasyVK::QueueThat::GRAPHICS}, 
-        {VK_KHR_SWAPCHAIN_EXTENSION_NAME}, 
-        true,
-        surface);
+    EasyVK::PhysicalDevice* physicalDevice;
+    try {
+        physicalDevice = instance.getPhysicalDevice(EasyVK::PhysicalDevice::DISCRETE,
+                                                    EasyVK::GRAPHICS | EasyVK::SWAP_CHAIN);
+    }catch (...){
+        physicalDevice = instance.getPhysicalDevice(EasyVK::PhysicalDevice::INTEGRATED,
+                                                    EasyVK::GRAPHICS | EasyVK::SWAP_CHAIN);
+    }
 
+    auto vertexSource = readFile("/Users/romantimofeev/Documents/CodingProjects/EasyVulkan/test/shaders/vert.spv");
+    auto fragmentSource = readFile("/Users/romantimofeev/Documents/CodingProjects/EasyVulkan/test/shaders/frag.spv");
 
-    EasyVK::LogicalDevice* logDevice = physDevice.createLogicalDevice({
-        {EasyVK::QueueThat::GRAPHICS},
-        {EasyVK::QueueThat::ZERO, true}
-    });
+    EasyVK::Device device = physicalDevice->createDevice(surface);
+    EasyVK::SwapChain swapChain = device.createSwapChain(surface);
 
-    EasyVK::Queue graphicsQueue = logDevice->getQueue(EasyVK::QueueThat::GRAPHICS);
-    EasyVK::Queue presentQueue = logDevice->getPresentQueue();
+    std::vector<EasyVK::Image> images = swapChain.getImages();
 
-    EasyVK::SwapChain swapChain = logDevice->createSwapChain(800, 600);
-    EasyVK::RenderPass renderPass = swapChain.getRenderPass();
+    EasyVK::Shader vertexShader = device.createShader(vertexSource);
+    EasyVK::Shader fragmentShader = device.createShader(fragmentSource);
 
-    EasyVK::CommandPool commandPool = graphicsQueue.createCommandPool();
+    EasyVK::Buffer buffer = device.createBuffer(sizeof(EasyMatrix::Matrix4x4f), EasyVK::Device::Graphics | EasyVK::Device::Host);
+    EasyVK::Buffer vertexBuffer = device.createBuffer(sizeof(Vertex) * vertexBufferContent.size(), EasyVK::Device::Graphics | EasyVK::Device::Host);
 
-    auto vertShaderSource = readFile("shaders/vert.spv");
-    auto fragShaderSource = readFile("shaders/frag.spv");
+    void* pVertexBuffer = vertexBuffer.bind();
+    memcpy(pVertexBuffer, vertexBufferContent.data(), vertexBufferContent.size() * sizeof (Vertex));
+    vertexBuffer.unbind();
 
-    EasyVK::Shader vertShader = logDevice->createShader(vertShaderSource);
-    EasyVK::Shader fragShader = logDevice->createShader(fragShaderSource);
+    EasyVK::ResourceDescriptor resourceDescriptor = device.createResourceDescriptor({{0,{buffer, EasyVK::DeviceResource::STORAGE_BUFFER}}});
+    EasyVK::RenderPass renderPass = device.createRenderPass({images[0]});
 
-    VkPipelineColorBlendAttachmentState colorAttachment{};
-    colorAttachment.blendEnable = VK_FALSE;
-    colorAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_A_BIT;
+    for(auto image = images.begin() + 1; image != images.end(); image++){
+        renderPass.addFrameBuffer({*image});
+    }
 
-    EasyVK::GraphicsPipeline graphicsPipeline = logDevice->createGraphicsPipeline(
-        {vertShader.getVertexStage("main"), fragShader.getFragmentStage("main")},
-        {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR},
-        {},
-        {},
-        {{0,0,800,600,0.0f,1.0f}},
-        {{{0,0},{800,600}}},
-        VK_CULL_MODE_BACK_BIT,
-        VK_FRONT_FACE_CLOCKWISE,
-        renderPass,
-        {colorAttachment}
-    );
+    EasyVK::GraphicsPipeline::VertexBufferBinding vertexBufferBinding;
+    vertexBufferBinding.stride = sizeof(Vertex);
+    vertexBufferBinding.binding = 0;
+    vertexBufferBinding.attributes = {
+            {0, 0, EasyVK::GraphicsPipeline::VertexBufferBinding::vec3f},
+            {offsetof(Vertex, color), 1, EasyVK::GraphicsPipeline::VertexBufferBinding::vec3f}
+    };
 
-    auto imageAvailable = logDevice->createSemaphore();
-    auto renderFence = logDevice->createFence(true);
-    auto renderFinished = logDevice->createSemaphore();
+    EasyVK::GraphicsPipeline graphicsPipeline = renderPass.createGraphicsPipeline(
+            resourceDescriptor,
+            {vertexShader, "main"},
+            {fragmentShader, "main"},
+            {vertexBufferBinding},
+            vk::PrimitiveTopology::eTriangleList
+            );
 
-    EasyVK::CommandBuffer commandBuffer = commandPool.createCommandBuffer();
+    EasyVK::CommandBuffer commandBuffer = device.createGraphicsCommandBuffer();
 
-    while(!glfwWindowShouldClose(window)){
+    auto* bufferMem = (EasyMatrix::Matrix4x4f*)buffer.bind();
+
+    double prevTime = glfwGetTime();
+    double deltaTime = 0;
+    double degrees = 0;
+
+    while (!glfwWindowShouldClose(window)){
+        vk::Extent2D renderSize = swapChain.getRenderSize();
+        double currentTime = glfwGetTime();
+        deltaTime = currentTime - prevTime;
+        prevTime = currentTime;
+        degrees += deltaTime * 180;
+        *bufferMem = EasyMatrix::createRotationMatrixZ(EasyMatrix::degreesToRadians((float)degrees)) * EasyMatrix::createPerspectiveProjection(90.0f, (float)renderSize.width, (float)renderSize.height, 0.1, 100);
+
         glfwPollEvents();
-
-        renderFence.waitForMe(UINT64_MAX);
-        auto frameId = swapChain.nextImageId(UINT64_MAX, imageAvailable);
-        renderFence.reset();
-
+        uint32_t imageId = swapChain.nextImage();
         commandBuffer.reset();
         commandBuffer.begin();
-        commandBuffer.beginRenderPass(
-            swapChain.getRenderPass(), 
-            swapChain.getFramebuffers()[frameId.second],
-            {{0,0}, swapChain.getExtent()},
-            {{1.0f,0.0f,0.0f}});
-        commandBuffer.bindGraphicsPipeline(graphicsPipeline);
-        commandBuffer.setViewports({swapChain.getViewport()});
-        commandBuffer.setScissors({{{0,0}, {swapChain.getExtent().height, swapChain.getExtent().width}}});
-        commandBuffer.draw(3, 1);
+        commandBuffer.setViewport({vk::Viewport(0,0, (float)renderSize.width, (float)renderSize.height)});
+        commandBuffer.setScissors({vk::Rect2D({},renderSize)});
+        commandBuffer.beginRenderPass(renderPass, imageId);
+        commandBuffer.bindVertexBuffer(vertexBuffer);
+        commandBuffer.bind(graphicsPipeline);
+        commandBuffer.bind(graphicsPipeline, resourceDescriptor);
+        commandBuffer.draw(6, 1);
         commandBuffer.endRenderPass();
         commandBuffer.end();
 
-        graphicsQueue.submit({commandBuffer}, {renderFence}, {imageAvailable}, {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}, {renderFinished});
-
-        presentQueue.presentSwapChain(swapChain, frameId.second, {renderFinished});
+        commandBuffer.submit();
+        commandBuffer.await();
+        swapChain.present(imageId, {commandBuffer});
     }
 
-    commandBuffer.destroy();
-    graphicsPipeline.destroy();
-    vertShader.destroy();
-    fragShader.destroy();
-    commandPool.destroy();
-    swapChain.destroy();
-    logDevice->destroy();
-    delete logDevice;
-    vkInstance.destroy();
+    return 0;
 }

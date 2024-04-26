@@ -201,8 +201,10 @@ namespace EasyMatrix{
         return res;
     }
 
-    inline Matrix4x4f createPerspectiveProjection(float fov, float aspect, float nearDist, float farDist){
+    inline Matrix4x4f createPerspectiveProjection(float fov, float width, float height, float nearDist, float farDist){
         Matrix4x4f res{};
+
+        float aspect = std::min(width, height) / std::max(width, height);
 
         res[0][0] = (1 / tan(fov / 2)) / aspect;
         res[1][1] = 1 / tan(fov / 2);

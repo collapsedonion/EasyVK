@@ -1,142 +1,133 @@
+//
+// Created by Роман  Тимофеев on 22.04.2024.
+//
 #include <EasyVulkan/Image.hpp>
-#include <EasyVulkan/LogicalDevice.hpp>
+#include "Utils.hpp"
 
-BASIC_METHOD__I(Image)
+void
+EasyVK::Image::allocate(vk::PhysicalDevice physicalDevice, vk::Device device, vk::Format colorFormat, vk::Extent3D size,
+                         const std::vector<uint32_t> &queueFamilies, bool hostAccess) {
 
-EasyVK::Image::Image(){
-}
+    vk::SharingMode mode = queueFamilies.size() > 1 ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive;
+    vk::ImageType type = vk::ImageType::e1D;
 
-EasyVK::Image::Image(LogicalDevice *device, VkExtent3D extent, VkFormat format, VkImageUsageFlags usage, VkImageType type, bool cpuAccess)
-{
-    _device = device;
-    _extent = extent;
-    VkImageCreateInfo imageCI{};
-    imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageCI.extent = extent;
-    imageCI.arrayLayers = 1;
-    imageCI.mipLevels = 1;
-    imageCI.imageType = type;
-    imageCI.usage = usage;
-    imageCI.format = format;
-    imageCI.tiling = cpuAccess ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL;
-    imageCI.initialLayout = format == VK_FORMAT_D32_SFLOAT || format == VK_FORMAT_D32_SFLOAT_S8_UINT ? VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
-    imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
-
-    _result = vkCreateImage(_device->getDevice(), &imageCI, nullptr, &_image);
-
-    if(!isReady()){
-        return;
+    if(size.height > 1){
+        type = vk::ImageType::e2D;
     }
 
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(_device->getDevice(), _image, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = _device->findMemoryType(memRequirements.memoryTypeBits, cpuAccess ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    _result = vkAllocateMemory(_device->getDevice(), &allocInfo, nullptr, &_memory);
-
-    if(!isReady()){
-        vkDestroyImage(_device->getDevice(), _image, nullptr);
-        return;
+    if(size.depth > 1){
+        type = vk::ImageType::e3D;
     }
 
-    vkBindImageMemory(_device->getDevice(), _image, _memory, 0);
-    _size = memRequirements.size;
+    vk::ImageCreateInfo createInfo = {};
+    createInfo.sType = vk::StructureType::eImageCreateInfo;
+    createInfo.format = colorFormat;
+    createInfo.sharingMode = mode;
+    createInfo.extent = size;
+    createInfo.tiling = hostAccess ? vk::ImageTiling::eLinear : vk::ImageTiling::eOptimal;
+    createInfo.imageType = type;
+    createInfo.usage = hostAccess ? vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc : vk::ImageUsageFlagBits::eTransferDst;
+    createInfo.initialLayout = vk::ImageLayout::eUndefined;
 
-    _imageView = ImageView(_device);
-    _imageView.init(_image, format, {extent.width, extent.height}, (VkImageViewType)type, 1, format == VK_FORMAT_D32_SFLOAT || format == VK_FORMAT_D32_SFLOAT_S8_UINT);
+    if(colorFormat == vk::Format::eD16Unorm || colorFormat == vk::Format::eD16UnormS8Uint || colorFormat == vk::Format::eD24UnormS8Uint || colorFormat == vk::Format::eD32Sfloat || colorFormat == vk::Format::eD32SfloatS8Uint){
+        createInfo.usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
+    }else{
+        createInfo.usage |= vk::ImageUsageFlagBits::eColorAttachment;
+    }
+
+    createInfo.mipLevels = 1;
+    createInfo.arrayLayers = 1;
+    createInfo.queueFamilyIndexCount = queueFamilies.size();
+    createInfo.pQueueFamilyIndices = queueFamilies.data();
+
+    vk::Image newImage = device.createImage(createInfo);
+    vk::MemoryRequirements imageMemRequirements = device.getImageMemoryRequirements(newImage);
+    vk::DeviceMemory memory = EasyVK::allocateDeviceMemory(device, physicalDevice, imageMemRequirements, hostAccess);
+    device.bindImageMemory(newImage, memory, 0);
+
+    this->device = device;
+    this->colorFormat = colorFormat;
+    this->size = size;
+    this->tiling = createInfo.tiling;
+    this->allocatedSize = imageMemRequirements.size;
+    this->allocatedMemory = memory;
+    this->image = newImage;
 }
 
-VkImage EasyVK::Image::getImage()
-{
-    return _image;
+void *EasyVK::Image::bind() {
+    if(createdFromSwapChain){
+        throw std::runtime_error("Non bindable resource");
+    }
+
+    return device.mapMemory(allocatedMemory, 0, allocatedSize);
 }
 
-VkDeviceMemory EasyVK::Image::getMemory(){
-    return _memory;
+void EasyVK::Image::unbind(){
+    device.unmapMemory(allocatedMemory);
 }
 
-void* EasyVK::Image::map(){
-    void* toRet;
-    vkMapMemory(_device->getDevice(), _memory, 0, _size, 0, &toRet);
-    return toRet;
-}
-
-void EasyVK::Image::unMap(){
-    vkUnmapMemory(_device->getDevice(), _memory);
-}
-
-uint64_t EasyVK::Image::getSize(){
-    return _size;
-}
-
-void EasyVK::Image::destroy(){
-    if(isReady()){
-        _result = VK_NOT_READY;
-        _imageView.destroy();
-        vkDestroyImage(_device->getDevice(), _image, nullptr);
-        vkFreeMemory(_device->getDevice(), _memory, nullptr);
+EasyVK::Image::~Image() {
+    if(isKilled() && !createdFromSwapChain) {
+        device.freeMemory(this->allocatedMemory);
+        device.destroy(this->image);
     }
 }
 
-VkExtent3D EasyVK::Image::getExtent(){
-    return _extent;
+EasyVK::Image::View EasyVK::Image::getView() {
+    auto newView = View();
+    newView.setup(this->device, this->colorFormat, this->size, this->image);
+    return newView;
 }
 
-EasyVK::ImageView EasyVK::Image::getImageView()
-{
-    return _imageView;
+void EasyVK::Image::createFromSwapChain(vk::Device device, vk::Format format, vk::Extent3D size, vk::Image image) {
+    this->device = device;
+    this->colorFormat = format;
+    this->size = size;
+    this->image = image;
+    createdFromSwapChain = true;
 }
 
-void EasyVK::Image::destroySampler(unsigned int id)
-{
-    if(_samplers.count(id)){
-        vkDestroySampler(_device->getDevice(), _samplers[id],nullptr);
-        _samplers.erase(id);
+void EasyVK::Image::View::setup(vk::Device device, vk::Format colorFormat, vk::Extent3D size, vk::Image image) {
+    vk::ImageViewCreateInfo createInfo = {};
+    createInfo.sType = vk::StructureType::eImageViewCreateInfo;
+    createInfo.format = colorFormat;
+    createInfo.image = image;
+    createInfo.components.a = vk::ComponentSwizzle::eA;
+    createInfo.components.b = vk::ComponentSwizzle::eB;
+    createInfo.components.g = vk::ComponentSwizzle::eG;
+    createInfo.components.r = vk::ComponentSwizzle::eR;
+    createInfo.viewType = vk::ImageViewType::e1D;
+
+    if(colorFormat == vk::Format::eD16Unorm || colorFormat == vk::Format::eD32Sfloat){
+        createInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+    }else if(colorFormat == vk::Format::eD16UnormS8Uint || colorFormat == vk::Format::eD24UnormS8Uint || colorFormat == vk::Format::eD32SfloatS8Uint){
+        createInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+    }
+    else {
+        createInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+    }
+
+    createInfo.subresourceRange.layerCount = 1;
+    createInfo.subresourceRange.levelCount = 1;
+    createInfo.subresourceRange.baseArrayLayer = 0;
+    createInfo.subresourceRange.baseMipLevel = 0;
+
+    if(size.height > 1){
+        createInfo.viewType = vk::ImageViewType::e2D;
+    }
+
+    if(size.depth > 1){
+        createInfo.viewType = vk::ImageViewType::e3D;
+    }
+
+    view = device.createImageView(createInfo);
+    this->device = device;
+    this->format = colorFormat;
+}
+
+EasyVK::Image::View::~View() {
+    if(isKilled()){
+        this->device.destroy(this->view);
     }
 }
 
-VkResult EasyVK::Image::createSampler(unsigned int id, VkFilter filter)
-{
-    if(_samplers.count(id)){
-        destroySampler(id);
-    }
-
-    VkSamplerCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    createInfo.magFilter = filter;
-    createInfo.minFilter = filter;
-
-    createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    createInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-
-    createInfo.anisotropyEnable = VK_FALSE;
-    createInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    createInfo.unnormalizedCoordinates = VK_FALSE;
-
-    createInfo.compareEnable = VK_FALSE;
-    createInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-
-    createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    createInfo.mipLodBias = 0.0f;
-    createInfo.minLod = 0.0f;
-    createInfo.maxLod = 0.0f;
-
-    VkSampler sampler;
-    VkResult res = vkCreateSampler(_device->getDevice(), &createInfo, nullptr, &sampler);
-    if(res == VK_SUCCESS){
-        _samplers[id] = sampler;
-    }
-
-    return res;
-}
-
-VkSampler EasyVK::Image::getSampler(unsigned int id)
-{
-    return _samplers[id];
-}

@@ -1,57 +1,73 @@
-#pragma once
-#include <vulkan/vulkan.h>
-#include <EasyVulkan/RenderPass.hpp>
-#include <EasyVulkan/DescriptorLayout.hpp>
+//
+// Created by Роман  Тимофеев on 24.04.2024.
+//
+
+#ifndef EASY_VULKAN_TEST_GRAPHICSPIPELINE_HPP
+#define EASY_VULKAN_TEST_GRAPHICSPIPELINE_HPP
+#include <vulkan/vulkan.hpp>
+#include <EasyVulkan/Base.hpp>
+#include <EasyVulkan/Shader.hpp>
+#include <EasyVulkan/ResourceDescriptor.hpp>
+#include <cctype>
 #include <vector>
+#include <string>
 
 namespace EasyVK{
 
-    class LogicalDevice;
+    class GraphicsPipeline : AutoFree{
+    public:
+        struct VertexBufferBinding{
+            enum AttributeType{
+                scalarFloat,
+                vec2f,
+                vec3f,
+                scalarInteger,
+                vec2i,
+                vec3i
+            };
 
-    class GraphicsPipeline{
-    
-    private:
-        VkPipeline _pipeline;
-        VkPipelineLayout _pipelineLayout;
-        VkDescriptorSetLayout _descriptorLayout;
-        LogicalDevice* _device;
+            struct Attribute{
+                uint32_t offset;
+                uint32_t location;
+                AttributeType type;
+            };
 
-
-        VkResult _result = VK_NOT_READY;
-        bool _ready = false;
-
-        GraphicsPipeline(LogicalDevice* logicalDevice);
+            uint32_t binding;
+            uint32_t  stride;
+            bool instanceData = false;
+            std::vector<Attribute> attributes;
+        };
 
     public:
+        ~GraphicsPipeline();
 
-        GraphicsPipeline();
+    private:
+        vk::Device device;
+        vk::Pipeline pipeline;
+        vk::PipelineLayout layout;
 
-        void init(
-            std::vector<VkPipelineShaderStageCreateInfo> shaderStages,
-            std::vector<VkDynamicState> dynamicStates,
-            std::vector<VkVertexInputBindingDescription> inputBindings,
-            std::vector<VkVertexInputAttributeDescription> inputAttributes,
-            std::vector<VkViewport> viewports,
-            std::vector<VkRect2D> scissors,
-            VkCullModeFlags cullMode,
-            VkFrontFace frontFace,
-            RenderPass renderPass,
-            std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments,
-            std::vector<DescriptorLayout> descriptors = {},
-            bool depthTestEnable = false,
-            bool depthWriteEnable = false,
-            VkCompareOp depthCmpMode = VK_COMPARE_OP_LESS,
-            VkPolygonMode polygonMode = VK_POLYGON_MODE_FILL,
-            VkPrimitiveTopology primitive = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
-        );
+    private:
+        static std::pair<std::vector<vk::VertexInputBindingDescription>, std::vector<vk::VertexInputAttributeDescription>>
+        unwrapVertexBinding(std::vector<VertexBufferBinding> vertexBindings);
 
-        VkPipeline getPipeline();
-        VkPipelineLayout getPipelineLayout();
-        VkResult getResult();
-        VkDescriptorSetLayout getDescriptorLayout();
-        bool getReady();
+    protected:
+        void setup(
+                uint32_t attachmentCount,
+                vk::Device device,
+                vk::RenderPass renderPass,
+                ResourceDescriptor resourceDescriptor,
+                std::pair<Shader, std::string> vertexShader,
+                std::pair<Shader, std::string> fragmentShader,
+                std::vector<VertexBufferBinding> bufferBinding,
+                vk::PrimitiveTopology topologyType,
+                vk::CompareOp depthTestCompareOp = vk::CompareOp::eNever,
+                bool counterClockwiseTriangles = false
+                );
 
-        void destroy();
-    friend LogicalDevice;
+    private:
+        friend RenderPass;
+        friend CommandBuffer;
     };
-}
+};
+
+#endif //EASY_VULKAN_TEST_GRAPHICSPIPELINE_HPP

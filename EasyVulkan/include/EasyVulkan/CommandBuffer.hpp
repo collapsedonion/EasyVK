@@ -1,53 +1,57 @@
-#pragma once
-#include <vulkan/vulkan.h>
-#include <EasyVulkan/LogicalDevice.hpp>
-#include <EasyVulkan/RenderPass.hpp>
-#include <EasyVulkan/Framebuffer.hpp>
+//
+// Created by Роман  Тимофеев on 21.04.2024.
+//
+
+#ifndef EASY_VULKAN_TEST_COMMANDBUFFER_HPP
+#define EASY_VULKAN_TEST_COMMANDBUFFER_HPP
+#include <vulkan/vulkan.hpp>
+#include <EasyVulkan/ComputePipeline.hpp>
+#include <EasyVulkan/ResourceDescriptor.hpp>
 #include <EasyVulkan/GraphicsPipeline.hpp>
+#include <EasyVulkan/RenderPass.hpp>
 #include <EasyVulkan/Buffer.hpp>
-#include <EasyVulkan/Image.hpp>
-#include <vector>
 
 namespace EasyVK{
+    class Device;
 
-    class CommandPool;
-
-    class CommandBuffer{
-    private:
-        LogicalDevice* _device;
-        VkCommandPool _pool;
-        VkCommandBuffer _buffer;
-        VkResult _result = VK_NOT_READY;
-        bool _ready = false;
-        
-        CommandBuffer(LogicalDevice * device, CommandPool* pool);
+    class CommandBuffer : AutoFree{
 
     public:
-        CommandBuffer();
+        ~CommandBuffer();
 
-        VkCommandBuffer getBuffer();
-        VkResult getResult();
-        bool isReady();
-        void destroy();
+    private:
+        vk::Queue submitQueue;
+        vk::Fence fence;
+        vk::Semaphore mySemaphore;
+        vk::CommandBuffer bufferHandler;
+        vk::CommandPool myCommandPool;
+        vk::Device device;
 
-        VkResult begin(VkCommandBufferUsageFlags flags = 0);
+    protected:
+        void allocateCommandBuffer(vk::CommandPool commandPool, vk::Queue submitQueue, vk::Device device);
 
-        void beginRenderPass(RenderPass renderPass, Framebuffer framebuffer, VkRect2D renderArea, std::vector<VkClearValue> clearColors);
-        void endRenderPass();
-        void bindGraphicsPipeline(GraphicsPipeline pipeline);
-        void bindGraphicsDescriptorSet(GraphicsPipeline pipeline, VkDescriptorSet set);
-        void setViewports(std::vector<VkViewport> viewports);
-        void setScissors(std::vector<VkRect2D> scissors);
-        void bindBuffers(std::vector<Buffer> buffers, std::vector<VkDeviceSize> offsets);
-        void bindIndexBuffer(Buffer buffer, VkIndexType type);
+    public:
+        void begin();
+        void end();
+        void submit(const std::vector<CommandBuffer>& waitCommandBuffers = {});
         void reset();
-        void copyBuffer(Buffer src, Buffer dst, size_t size);
-        void copyBufferToImage(Buffer src, Image dst);
-        void imageLayoutTransition(Image img, VkImageLayout oldLayout, VkImageLayout newLayout);
-        void draw(int count, int instances);
-        void drawIndexed(uint32_t count, uint32_t instances);
+        void bind(ComputePipeline pipeline);
+        void bind(ComputePipeline pipeline, ResourceDescriptor descriptor);
+        void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+        void beginRenderPass(RenderPass renderPass, uint32_t frameBufferIndex = 0);
+        void bind(GraphicsPipeline graphicsPipeline);
+        void bind(GraphicsPipeline graphicsPipeline, ResourceDescriptor descriptor);
+        void bindVertexBuffer(EasyVK::Buffer buffer);
+        void draw(uint32_t count, uint32_t instances);
+        void setScissors(std::vector<vk::Rect2D> scissors);
+        void setViewport(std::vector<vk::Viewport> viewports);
+        void endRenderPass();
+        void await();
 
-        VkResult end();
-    friend CommandPool;
+    private:
+        friend Device;
+        friend SwapChain;
     };
 }
+
+#endif //EASY_VULKAN_TEST_COMMANDBUFFER_HPP

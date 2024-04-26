@@ -1,41 +1,60 @@
-#pragma once
-#include <vulkan/vulkan.h>
-#include <vector>
+//
+// Created by Роман  Тимофеев on 24.04.2024.
+//
+
+#ifndef EASY_VULKAN_TEST_RENDERPASS_HPP
+#define EASY_VULKAN_TEST_RENDERPASS_HPP
+#include <vulkan/vulkan.hpp>
+#include <EasyVulkan/GraphicsPipeline.hpp>
+#include <EasyVulkan/Base.hpp>
+#include <EasyVulkan/Image.hpp>
 
 namespace EasyVK{
-
-    class LogicalDevice;
-    class SwapChain;
-
-    class RenderPass{
+    class RenderPass : AutoFree{
 
     private:
+        struct FrameBufferDescription{
+            std::vector<vk::Format> formats;
+        };
 
-        VkRenderPass _renderpass = VK_NULL_HANDLE;
-        LogicalDevice* _device = nullptr;
-
-        VkResult _result = VK_NOT_READY;
-        bool _ready = false;
-
-        RenderPass(LogicalDevice* device);
-    
     public:
-        RenderPass();
+        ~RenderPass();
 
-        void init(
-            std::vector<VkFormat> attachment_format,
-            VkFormat stencil_format,
-            bool stencil_attachment
-        );
+    private:
+        vk::RenderPass renderPass;
+        std::vector<vk::Framebuffer> frameBuffer;
+        std::map<vk::Framebuffer, vk::Rect2D> renderArea;
+        vk::Device device;
+        uint32_t imageAttachmentCount = 0;
+        std::map<vk::Framebuffer, std::vector<EasyVK::Image::View>> views;
+        std::vector<vk::ClearValue> values;
+        FrameBufferDescription myFrameBuffer;
 
-        VkRenderPass getRenderPass();
-        LogicalDevice getDevice();
-        VkResult getResult();
-        bool isReady();
+    public:
+        void addFrameBuffer(const std::vector<EasyVK::Image>& images);
 
-        void destroy();
+        void freeFrameBuffers();
 
-    friend LogicalDevice;
-    friend SwapChain;
+        GraphicsPipeline createGraphicsPipeline(
+                    ResourceDescriptor resourceDescriptor,
+                    std::pair<Shader, std::string> vertexShader,
+                    std::pair<Shader, std::string> fragmentShader,
+                    std::vector<GraphicsPipeline::VertexBufferBinding> bufferBinding,
+                    vk::PrimitiveTopology topologyType,
+                    vk::CompareOp depthTestCompareOp = vk::CompareOp::eNever,
+                    bool counterClockwiseTriangles = false
+                );
+
+    protected:
+        void setup(
+                const std::vector<EasyVK::Image>& images,
+                vk::Device device
+                );
+    private:
+        friend Device;
+        friend GraphicsPipeline;
+        friend CommandBuffer;
     };
-};
+}
+
+#endif //EASY_VULKAN_TEST_RENDERPASS_HPP

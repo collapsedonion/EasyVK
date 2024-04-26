@@ -1,41 +1,63 @@
-#pragma once
+//
+// Created by Роман  Тимофеев on 22.04.2024.
+//
+
+#ifndef EASY_VULKAN_TEST_IMAGE_HPP
+#define EASY_VULKAN_TEST_IMAGE_HPP
+#include <vulkan/vulkan.hpp>
 #include <EasyVulkan/Base.hpp>
-#include <vulkan/vulkan.h>
-#include <EasyVulkan/ImageView.hpp>
-#include <map>
 
-N_EVK{
-    class Image{
+namespace EasyVK{
 
-    private:
-        BASIC_MEMBERS;
+    class Device;
 
-        LogicalDevice* _device;
-        VkImage _image;
-        VkDeviceMemory _memory;
-        VkExtent3D _extent;
-        ImageView _imageView;
-        std::map<unsigned int, VkSampler> _samplers;
-        
-        uint64_t _size;
-
-        Image(LogicalDevice* device, VkExtent3D extent, VkFormat format, VkImageUsageFlags usage, VkImageType type, bool cpuAccess);
+    class Image : AutoFree{
 
     public:
-        Image();
+        class View : AutoFree{
+        public:
+            ~View();
 
-        BASIC_METHODS;
+        private:
+            vk::Device device;
+            vk::ImageView view;
+            vk::Format format;
 
-        VkExtent3D getExtent();
-        VkImage getImage();
-        VkDeviceMemory getMemory();
-        ImageView getImageView();
-        uint64_t getSize();
-        VkResult createSampler(unsigned int id, VkFilter filter);
-        VkSampler getSampler(unsigned int id);
-        void destroySampler(unsigned int id);
-        void* map();
-        void unMap();
-    friend LogicalDevice;
-    }; 
+        protected:
+            void setup(vk::Device device, vk::Format colorFormat, vk::Extent3D size, vk::Image image);
+
+        private:
+            friend RenderPass;
+            friend Image;
+        };
+
+    public:
+        ~Image();
+
+    private:
+        vk::Device device;
+        vk::DeviceMemory allocatedMemory;
+        vk::Image image;
+        vk::Format colorFormat;
+        vk::Extent3D size;
+        uint32_t allocatedSize;
+        vk::ImageTiling tiling;
+        bool createdFromSwapChain = false;
+
+    public:
+        void* bind();
+        void unbind();
+        View getView();
+
+    private:
+        void createFromSwapChain(vk::Device device, vk::Format format, vk::Extent3D size, vk::Image image);
+        void allocate(vk::PhysicalDevice physicalDevice, vk::Device device, vk::Format colorFormat, vk::Extent3D size, const std::vector<uint32_t> &queueFamilies, bool hostAccess);
+
+    private:
+        friend Device;
+        friend SwapChain;
+        friend RenderPass;
+    };
 }
+
+#endif //EASY_VULKAN_TEST_IMAGE_HPP

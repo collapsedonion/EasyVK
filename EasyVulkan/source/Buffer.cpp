@@ -1,96 +1,86 @@
+//
+// Created by Роман  Тимофеев on 22.04.2024.
+//
 #include <EasyVulkan/Buffer.hpp>
-#include <EasyVulkan/LogicalDevice.hpp>
-#include <stdexcept>
+#include "Utils.hpp"
 
-EasyVK::Buffer::Buffer(LogicalDevice *device, uint64_t size, bool deviceAccesible, VkBufferUsageFlags usage)
-{
-    _device = device;
-    _size = size;
+void EasyVK::Buffer::allocate(vk::PhysicalDevice physicalDevice, vk::Device device, size_t size, bool hostVisible,
+                              const std::vector<uint32_t> &queueFamilies) {
 
-    VkBufferCreateInfo bufferCI{};
-    bufferCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferCI.size = size;
-    bufferCI.usage = usage;
-    bufferCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    vk::BufferUsageFlags flags;
+    vk::SharingMode sharingMode = queueFamilies.size() > 1 ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive;
 
-    _result = vkCreateBuffer(_device->getDevice(), &bufferCI, nullptr, &_buffer);
-
-    if(_result != VK_SUCCESS){
-        return;
+    if(hostVisible){
+        flags = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer;
+    }else{
+        flags = vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer;
     }
 
-    VkMemoryRequirements memoryReq;
-    vkGetBufferMemoryRequirements(_device->getDevice(), _buffer, &memoryReq);
+    vk::BufferCreateInfo createInfo = {};
+    createInfo.sType = vk::StructureType::eBufferCreateInfo;
+    createInfo.sharingMode = sharingMode;
+    createInfo.usage = flags;
+    createInfo.size = size;
+    createInfo.queueFamilyIndexCount = queueFamilies.size();
+    createInfo.pQueueFamilyIndices = queueFamilies.data();
 
-    VkMemoryAllocateInfo allocI{};
-    allocI.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocI.allocationSize = memoryReq.size;
-    allocI.memoryTypeIndex = _device->findMemoryType(memoryReq.memoryTypeBits, deviceAccesible ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT: 0);
+    vk::Buffer newBuffer = device.createBuffer(createInfo);
+    vk::MemoryRequirements bufferMemoryRequirements = device.getBufferMemoryRequirements(newBuffer);
+    vk::DeviceMemory bufferMemory = allocateDeviceMemory(device, physicalDevice, bufferMemoryRequirements, hostVisible);
 
-    _result = vkAllocateMemory(_device->getDevice(), &allocI, nullptr, &_mem);
+    device.bindBufferMemory(newBuffer, bufferMemory,0);
 
-    if(_result != VK_SUCCESS){
-        vkDestroyBuffer(_device->getDevice(), _buffer, nullptr);
-        return;
-    }
+    this->allocatedSize = bufferMemoryRequirements.size;
+    this->device = device;
+    this->hostVisible = hostVisible;
+    this->buffer = newBuffer;
+    this->allocatedMemory = bufferMemory;
+}
 
-    _result = vkBindBufferMemory(_device->getDevice(), _buffer, _mem, 0);
-
-    if(_result != VK_SUCCESS){
-        vkDestroyBuffer(_device->getDevice(), _buffer, nullptr);
-        vkFreeMemory(_device->getDevice(), _mem, nullptr);
-        return;
+EasyVK::Buffer::~Buffer() {
+    if(isKilled()) {
+        this->device.freeMemory(this->allocatedMemory);
+        this->device.destroy(this->buffer);
     }
 }
 
-EasyVK::Buffer::Buffer()
-{
+void *EasyVK::Buffer::bind() {
+    return device.mapMemory(this->allocatedMemory, 0, this->allocatedSize);
 }
 
-VkBuffer EasyVK::Buffer::getBuffer()
-{
-    return _buffer;
+void EasyVK::Buffer::unbind() {
+    device.unmapMemory(this->allocatedMemory);
 }
 
-VkDeviceMemory EasyVK::Buffer::getMemory()
-{
-    return _mem;
+bool EasyVK::Buffer::checkResourceTypeCompatability(EasyVK::DeviceResource::ResourceType type) {
+    return (type & DeviceResource::UNIFORM_BUFFER) || (type & DeviceResource::STORAGE_BUFFER) || (type & DeviceResource::AUTO);
 }
 
-VkResult EasyVK::Buffer::getResult()
-{
-    return _result;
+void
+EasyVK::Buffer::bindToDescriptorSet(vk::Device device, vk::DescriptorSet set, ResourceType type, uint32_t binding) {
+
+    vk::DescriptorBufferInfo bufferInfo = {};
+    bufferInfo.buffer = this->buffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = this->allocatedSize;
+
+    vk::WriteDescriptorSet writeDescriptorSet = {};
+    writeDescriptorSet.sType = vk::StructureType::eWriteDescriptorSet;
+    writeDescriptorSet.descriptorCount = 1;
+    writeDescriptorSet.descriptorType = convertResourceTypeToDescriptorType(type);
+    writeDescriptorSet.dstArrayElement = 0;
+    writeDescriptorSet.dstBinding = binding;
+    writeDescriptorSet.dstSet = set;
+    writeDescriptorSet.pBufferInfo = &bufferInfo;
+
+    device.updateDescriptorSets(1, &writeDescriptorSet, 0, nullptr);
 }
 
-uint32_t EasyVK::Buffer::getSize()
-{
-    return _size;
-}
+EasyVK::DeviceResource::ResourceType
+EasyVK::Buffer::getVerifiedResourceType(EasyVK::DeviceResource::ResourceType type) {
+   if(type & DeviceResource::AUTO){
+       return DeviceResource::STORAGE_BUFFER;
+   }
 
-bool EasyVK::Buffer::isReady()
-{
-    return _result == VK_SUCCESS;
-}
-
-void *EasyVK::Buffer::map()
-{
-    void* ret;
-
-    vkMapMemory(_device->getDevice(), _mem, 0, _size, 0, &ret);
-
-    return ret;
-}
-
-void EasyVK::Buffer::unMap()
-{
-    vkUnmapMemory(_device->getDevice(), _mem);
-}
-
-void EasyVK::Buffer::destroy()
-{
-    if(isReady()){
-        vkDestroyBuffer(_device->getDevice(), _buffer, nullptr);
-        vkFreeMemory(_device->getDevice(), _mem, nullptr);
-        _result = VK_NOT_READY;
-    }
+    return type;
 }

@@ -1,108 +1,68 @@
-#include "EasyVulkan/Instance.hpp"
-#include "EasyVulkan/PhysicalDevice.hpp"
+//
+// Created by Роман  Тимофеев on 20.04.2024.
+//
+#include <EasyVulkan/Instance.hpp>
 
-const std::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation"
-};
+EasyVK::Instance::Instance(const std::string& application_name,
+                           EasyVK::Instance::VULKAN_VERSION version,
+                           const std::set<std::string>& supported_layers,
+                           const std::set<std::string>& supported_extensions) {
 
-namespace EasyVK{
-    Instance::Instance(
-        const std::string& application_name,
-        const std::string& engine_name,
-        const Version& application_version,
-        const Version& engine_version,
-        const Version& vulkan_api_version,
-        const std::vector<const char*>& enabled_extensions,
-        bool enable_validation_layer
-){
-    init(application_name, engine_name, application_version, engine_version, vulkan_api_version, enabled_extensions, enable_validation_layer);
-}
+    vk::ApplicationInfo applicationInfo = {};
+    applicationInfo.sType = vk::StructureType::eApplicationInfo;
+    applicationInfo.pApplicationName = application_name.c_str();
+    applicationInfo.pEngineName = "Easy_Vulkan";
 
-Instance::Instance()
-{
-}
+    switch (version) {
+        case V1_0:
+            applicationInfo.apiVersion = VK_API_VERSION_1_0;
+            break;
+    }
 
-bool Instance::valid()
-{
-    return _successful;
-}
 
-VkResult Instance::getResult()
-{
-    return _create_result;
-}
-void Instance::init(
-    const std::string& application_name,
-    const std::string& engine_name,
-    const Version& application_version,
-    const Version& engine_version,
-    const Version& vulkan_api_version,
-    std::vector<const char*> enabled_extensions,
-    bool enable_Validation_Layers
-)
-{
-    destroy();
-    VkApplicationInfo applicationInfo{};
-    applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-
-    applicationInfo.applicationVersion = application_version.getVulkanVersion();
-    applicationInfo.engineVersion = engine_version.getVulkanVersion();
-    applicationInfo.apiVersion = vulkan_api_version.getVulkanVersion(true);
-    applicationInfo.pApplicationName = application_name.data();
-    applicationInfo.pEngineName = engine_name.data();
-    
-    VkInstanceCreateInfo createInfo{};
-
-    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    vk::InstanceCreateInfo createInfo = {};
+    createInfo.sType = vk::StructureType::eInstanceCreateInfo;
     createInfo.pApplicationInfo = &applicationInfo;
 
-    if (enable_Validation_Layers) {
-        createInfo.ppEnabledLayerNames = validationLayers.data();
-        createInfo.enabledLayerCount = validationLayers.size();
+    std::vector<const char*> layers;
+    layers.reserve(supported_layers.size());
+    std::vector<const char*> extensions;
+    extensions.reserve(supported_extensions.size());
+
+    for(const auto& layer : supported_layers){
+        layers.emplace_back(layer.c_str());
     }
-    else {
-        createInfo.enabledLayerCount = 0;
+
+    for(const auto& extension : supported_extensions){
+        extensions.emplace_back(extension.c_str());
     }
 
-    #ifdef __APPLE__
-        createInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-        enabled_extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-    #endif
+#ifdef __APPLE__
+    createInfo.flags |= vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
+    extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#endif
+    createInfo.enabledLayerCount = layers.size();
+    createInfo.ppEnabledLayerNames = layers.data();
+    createInfo.enabledExtensionCount = extensions.size();
+    createInfo.ppEnabledExtensionNames = extensions.data();
 
-    createInfo.enabledExtensionCount = enabled_extensions.size();
-    createInfo.ppEnabledExtensionNames = enabled_extensions.data();
-
-    _create_result = vkCreateInstance(&createInfo, nullptr, &_instance);
-
-    if(_create_result == VK_SUCCESS){
-        _successful = true;
-    }
+    this->supported_layers = supported_layers;
+    this->supported_extensions = supported_extensions;
+    instance = vk::createInstance(createInfo);
 }
 
-VkInstance Instance::getHandledInstance()
-{
-    return _instance;
+bool EasyVK::Instance::layerEnabled(const std::string &name) {
+    return supported_layers.contains(name);
 }
 
-PhysicalDevice Instance::getPhysicalDevice(            
-    const std::vector<QueueThat> &supported_families,
-    const std::vector<std::string>& supported_extensions,
-    bool can_present,
-    VkSurfaceKHR surface)
-{
-    if(_successful){
-        return PhysicalDevice(*this, supported_families, supported_extensions, can_present, surface);
-    }
+bool EasyVK::Instance::extensionEnabled(const std::string &name) {
+    return supported_extensions.contains(name);
+}
 
-    return PhysicalDevice();
-}
-void Instance::destroy()
-{
-    if(_successful){
-        vkDestroyInstance(_instance, nullptr);
-        _instance = VK_NULL_HANDLE;
-        _successful = false;
-        _create_result = VK_NOT_READY;
-    }
-}
+EasyVK::PhysicalDevice * EasyVK::Instance::getPhysicalDevice(
+        EasyVK::PhysicalDevice::DeviceType type,
+        EasyVK::Features features) {
+    auto* device = new EasyVK::PhysicalDevice();
+    device->setupWithDesired(type, features, this->instance);
+    return device;
 }
