@@ -23,12 +23,3 @@ endif()
 
 target_include_directories(easy_vulkan PRIVATE ${EASY_VULKAN_INCLUDE})
 target_link_libraries(easy_vulkan PUBLIC Vulkan::Vulkan)
-
-project(easy_vulkan_test)
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/test)
-find_package(glfw3 REQUIRED)
-
-add_executable(easy_vulkan_test ${CMAKE_SOURCE_DIR}/test/source/main.cpp)
-target_include_directories(easy_vulkan_test PRIVATE ${EASY_VULKAN_INCLUDE})
-target_include_directories(easy_vulkan_test PRIVATE ${CMAKE_SOURCE_DIR}/EasyMatrix/include)
-target_link_libraries(easy_vulkan_test PRIVATE easy_vulkan glfw Vulkan::Vulkan)

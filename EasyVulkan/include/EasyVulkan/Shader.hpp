@@ -20,7 +20,7 @@ namespace EasyVK{
         vk::Device device;
         vk::ShaderModule module;
 
-    public:
+    private:
         void setup(vk::Device device, const std::vector<uint32_t>& data);
 
     private:

@@ -31,7 +31,7 @@ namespace EasyVK{
         bool layerEnabled(const std::string& name);
         bool extensionEnabled(const std::string& name);
 
-        PhysicalDevice* getPhysicalDevice(EasyVK::PhysicalDevice::DeviceType type, EasyVK::Features);
+        PhysicalDevice* getPhysicalDevice(EasyVK::PhysicalDevice::DeviceType type, EasyVK::Features features);
 
     private:
         friend GLFWHelper;

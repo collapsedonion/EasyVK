@@ -25,10 +25,10 @@ namespace EasyVK {
     class Device : AutoFree{
     public:
         enum BufferAccessFlagBits : uint32_t {
-            Graphics,
-            Transfer,
-            Compute,
-            Host
+            Graphics = 0b1,
+            Transfer = 0b10,
+            Compute = 0b100,
+            Host = 0b1000
         };
 
         typedef uint32_t BufferAccessFlags;

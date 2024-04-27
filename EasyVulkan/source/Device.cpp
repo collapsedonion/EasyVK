@@ -27,6 +27,10 @@ void EasyVK::Device::setUpWithDesired(vk::Instance instance, Features features, 
 
     if(features & SWAP_CHAIN){
         presentQueueNeeded = true;
+
+        if(surface == VK_NULL_HANDLE){
+            throw std::runtime_error("vk::Surface is required when creating device with swap chain support");
+        }
     }
 
     std::vector<std::pair<uint32_t, vk::QueueFamilyProperties*>> allComputeFamilies;
@@ -332,6 +336,10 @@ EasyVK::RenderPass EasyVK::Device::createRenderPass(const std::vector<Image> ima
 }
 
 EasyVK::SwapChain EasyVK::Device::createSwapChain(vk::SurfaceKHR surfaceKhr) {
+    if(!(enabledFeatures & EasyVK::FeaturesBits::SWAP_CHAIN)){
+        throw std::runtime_error("Can not create swap chain on that device");
+    }
+
     auto swapChain = EasyVK::SwapChain();
     swapChain.presentQueue = presentQueue.second;
     swapChain.setup(physicalDevice, device, surfaceKhr, {presentQueue.first, graphics.first});
