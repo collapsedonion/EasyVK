@@ -21,5 +21,5 @@ if(NOT Vulkan_FOUND)
     message(ERROR "Failed to find Vulkan lib")
 endif()
 
-target_include_directories(easy_vulkan PRIVATE ${EASY_VULKAN_INCLUDE})
+target_include_directories(easy_vulkan PUBLIC ${EASY_VULKAN_INCLUDE})
 target_link_libraries(easy_vulkan PUBLIC Vulkan::Vulkan)
