@@ -15,27 +15,6 @@ namespace EasyVK{
     class GraphicsPipeline;
     class GLFWHelper;
     class SwapChain;
-
-    class AutoFree{
-
-    protected:
-        int* referenceCounter;
-
-    public:
-        AutoFree();
-        AutoFree(const AutoFree& ref);
-        AutoFree(AutoFree&& ref) noexcept;
-
-        AutoFree& operator = (const AutoFree& other);
-
-        AutoFree& operator = (AutoFree&& other) noexcept;
-
-    protected:
-        bool isKilled();
-
-    public:
-        ~AutoFree();
-    };
 };
 
 #endif //EASY_VULKAN_TEST_BASE_HPP

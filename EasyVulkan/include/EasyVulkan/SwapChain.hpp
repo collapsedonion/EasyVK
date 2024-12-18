@@ -11,7 +11,7 @@
 #include <set>
 
 namespace EasyVK {
-    class SwapChain :AutoFree{
+    class SwapChain{
 
     public:
         ~SwapChain();
@@ -24,19 +24,21 @@ namespace EasyVK {
         vk::SwapchainKHR swapChain = VK_NULL_HANDLE;
         vk::Extent3D size;
         vk::Format format;
+        vk::Fence presentaionFence = VK_NULL_HANDLE;
         vk::Queue presentQueue;
         bool seekingForImage = false;
 
     public:
-        std::vector<EasyVK::Image> getImages();
+        std::vector<EasyVK::Image*> getImages();
         vk::Extent2D getRenderSize();
-        uint32_t nextImage();
+        std::pair<uint32_t, vk::Result> nextImage();
+        void waitForPresentEnd();
         void recreate();
-        void present(uint32_t imageId, const std::vector<CommandBuffer>& awaitFor = {});
+        vk::Result present(uint32_t imageId);
 
     protected:
         void setup(vk::PhysicalDevice physicalDevice, vk::Device device, vk::SurfaceKHR surface,
-                   std::set<uint32_t> queueFamilies);
+                   const std::set<uint32_t>& queueFamilies);
 
     private:
         friend Device;

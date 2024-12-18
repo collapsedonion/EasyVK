@@ -11,7 +11,7 @@
 
 namespace EasyVK{
 
-    class Shader : AutoFree{
+    class Shader{
 
     public:
         ~Shader();

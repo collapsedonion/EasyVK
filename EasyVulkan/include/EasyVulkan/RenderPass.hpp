@@ -10,11 +10,17 @@
 #include <EasyVulkan/Image.hpp>
 
 namespace EasyVK{
-    class RenderPass : AutoFree{
+    class RenderPass{
 
     private:
         struct FrameBufferDescription{
             std::vector<vk::Format> formats;
+        };
+
+    public:
+        enum class ImageOp{
+            Load,
+            Clear
         };
 
     public:
@@ -26,20 +32,20 @@ namespace EasyVK{
         std::map<vk::Framebuffer, vk::Rect2D> renderArea;
         vk::Device device;
         uint32_t imageAttachmentCount = 0;
-        std::map<vk::Framebuffer, std::vector<EasyVK::Image::View>> views;
+        std::map<vk::Framebuffer, std::vector<EasyVK::Image::View*>> views;
         std::vector<vk::ClearValue> values;
         FrameBufferDescription myFrameBuffer;
 
     public:
-        void addFrameBuffer(const std::vector<EasyVK::Image>& images);
+        void addFrameBuffer(const std::vector<EasyVK::Image*>& images);
 
         void freeFrameBuffers();
 
-        GraphicsPipeline createGraphicsPipeline(
-                    ResourceDescriptor resourceDescriptor,
-                    std::pair<Shader, std::string> vertexShader,
-                    std::pair<Shader, std::string> fragmentShader,
-                    std::vector<GraphicsPipeline::VertexBufferBinding> bufferBinding,
+        GraphicsPipeline* createGraphicsPipeline(
+                    ResourceDescriptor* resourceDescriptor,
+                    std::pair<Shader*, std::string> vertexShader,
+                    std::pair<Shader*, std::string> fragmentShader,
+                    const std::vector<GraphicsPipeline::VertexBufferBinding>& bufferBinding,
                     vk::PrimitiveTopology topologyType,
                     vk::CompareOp depthTestCompareOp = vk::CompareOp::eNever,
                     bool counterClockwiseTriangles = false
@@ -47,7 +53,7 @@ namespace EasyVK{
 
     protected:
         void setup(
-                const std::vector<EasyVK::Image>& images,
+                const std::vector<std::pair<EasyVK::Image*, ImageOp>>& images,
                 vk::Device device
                 );
     private:

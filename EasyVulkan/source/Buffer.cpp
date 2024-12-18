@@ -38,10 +38,8 @@ void EasyVK::Buffer::allocate(vk::PhysicalDevice physicalDevice, vk::Device devi
 }
 
 EasyVK::Buffer::~Buffer() {
-    if(isKilled()) {
-        this->device.freeMemory(this->allocatedMemory);
-        this->device.destroy(this->buffer);
-    }
+    this->device.freeMemory(this->allocatedMemory);
+    this->device.destroy(this->buffer);   
 }
 
 void *EasyVK::Buffer::bind() {
@@ -78,9 +76,9 @@ EasyVK::Buffer::bindToDescriptorSet(vk::Device device, vk::DescriptorSet set, Re
 
 EasyVK::DeviceResource::ResourceType
 EasyVK::Buffer::getVerifiedResourceType(EasyVK::DeviceResource::ResourceType type) {
-   if(type & DeviceResource::AUTO){
-       return DeviceResource::STORAGE_BUFFER;
-   }
+    if(type & DeviceResource::AUTO){
+        return DeviceResource::STORAGE_BUFFER;
+    }
 
     return type;
 }

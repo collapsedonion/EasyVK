@@ -24,7 +24,7 @@ namespace EasyVK{
         typedef uint64_t DeviceType;
 
     public:
-        Device createDevice(vk::SurfaceKHR surface = VK_NULL_HANDLE);
+        Device* createDevice(vk::SurfaceKHR surface = VK_NULL_HANDLE);
 
     private:
         Features enabledFeatures = 0x0;

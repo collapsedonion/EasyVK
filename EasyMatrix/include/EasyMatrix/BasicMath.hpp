@@ -8,6 +8,6 @@ namespace EasyMatrix{
     }
 
     inline float radianToDegrees(float radians){
-        return radians / (M_PI / 100);
+        return radians / (M_PI / 180);
     }
 }

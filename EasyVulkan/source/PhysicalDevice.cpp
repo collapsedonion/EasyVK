@@ -85,14 +85,27 @@ void EasyVK::PhysicalDevice::setupWithDesired(EasyVK::PhysicalDevice::DeviceType
         throw std::runtime_error("No compatible physical device");
     }
 
+    bool found = false;
+
+    for(uint32_t i = 0; i < remaining.size(); i++){
+        if(remaining[i].getProperties().deviceType == vk::PhysicalDeviceType::eDiscreteGpu){
+            found = true;
+            this->deviceHandler = remaining[i];
+            break;
+        }
+    }
+
+    if(!found){
+        this->deviceHandler = remaining[0];
+    }
+
     this->enabledFeatures = features;
-    this->deviceHandler = remaining[0];
     this->instance = instance;
     this->set_up = true;
 }
 
-EasyVK::Device EasyVK::PhysicalDevice::createDevice(vk::SurfaceKHR surface) {
-    auto newDevice = EasyVK::Device();
-    newDevice.setUpWithDesired(this->instance, this->enabledFeatures, this->deviceHandler, surface);
+EasyVK::Device* EasyVK::PhysicalDevice::createDevice(vk::SurfaceKHR surface) {
+    auto newDevice = new EasyVK::Device();
+    newDevice->setUpWithDesired(this->instance, this->enabledFeatures, this->deviceHandler, surface);
     return newDevice;
 }

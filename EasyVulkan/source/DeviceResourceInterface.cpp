@@ -16,7 +16,7 @@ EasyVK::DeviceResource::convertResourceTypeToDescriptorType(EasyVK::DeviceResour
         case UNIFORM_BUFFER:
             return vk::DescriptorType::eUniformBuffer;
         case IMAGE_VIEW:
-            return vk::DescriptorType::eSampledImage;
+            return vk::DescriptorType::eCombinedImageSampler;
 
         default:
             break;

@@ -35,6 +35,8 @@ EasyVK::Image::allocate(vk::PhysicalDevice physicalDevice, vk::Device device, vk
         createInfo.usage |= vk::ImageUsageFlagBits::eColorAttachment;
     }
 
+    createInfo.usage |= vk::ImageUsageFlagBits::eSampled;
+
     createInfo.mipLevels = 1;
     createInfo.arrayLayers = 1;
     createInfo.queueFamilyIndexCount = queueFamilies.size();
@@ -45,6 +47,7 @@ EasyVK::Image::allocate(vk::PhysicalDevice physicalDevice, vk::Device device, vk
     vk::DeviceMemory memory = EasyVK::allocateDeviceMemory(device, physicalDevice, imageMemRequirements, hostAccess);
     device.bindImageMemory(newImage, memory, 0);
 
+    this->layout = createInfo.initialLayout;
     this->device = device;
     this->colorFormat = colorFormat;
     this->size = size;
@@ -67,15 +70,15 @@ void EasyVK::Image::unbind(){
 }
 
 EasyVK::Image::~Image() {
-    if(isKilled() && !createdFromSwapChain) {
+    if(!createdFromSwapChain) {
         device.freeMemory(this->allocatedMemory);
         device.destroy(this->image);
     }
 }
 
-EasyVK::Image::View EasyVK::Image::getView() {
-    auto newView = View();
-    newView.setup(this->device, this->colorFormat, this->size, this->image);
+EasyVK::Image::View* EasyVK::Image::getView() {
+    auto newView = new View();
+    newView->setup(this->device, this->colorFormat, this->size, this->image);
     return newView;
 }
 
@@ -84,6 +87,7 @@ void EasyVK::Image::createFromSwapChain(vk::Device device, vk::Format format, vk
     this->colorFormat = format;
     this->size = size;
     this->image = image;
+    this->layout = vk::ImageLayout::eUndefined;
     createdFromSwapChain = true;
 }
 
@@ -121,13 +125,60 @@ void EasyVK::Image::View::setup(vk::Device device, vk::Format colorFormat, vk::E
     }
 
     view = device.createImageView(createInfo);
+
+    vk::SamplerCreateInfo samplerCreateInfo = {};
+    samplerCreateInfo.magFilter = vk::Filter::eNearest;
+    samplerCreateInfo.minFilter = vk::Filter::eNearest;
+    samplerCreateInfo.mipmapMode = vk::SamplerMipmapMode::eNearest;
+    samplerCreateInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
+    samplerCreateInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
+    samplerCreateInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
+    samplerCreateInfo.anisotropyEnable = vk::False;
+    samplerCreateInfo.compareEnable = vk::False;
+    samplerCreateInfo.borderColor = vk::BorderColor::eFloatTransparentBlack;
+    samplerCreateInfo.unnormalizedCoordinates = vk::False;
+
+    this->sampler = device.createSampler(samplerCreateInfo);
     this->device = device;
     this->format = colorFormat;
 }
 
-EasyVK::Image::View::~View() {
-    if(isKilled()){
-        this->device.destroy(this->view);
-    }
+bool EasyVK::Image::View::checkResourceTypeCompatability(ResourceType type)
+{
+    return (type & DeviceResource::IMAGE_VIEW) || (type & DeviceResource::AUTO); 
 }
 
+void EasyVK::Image::View::bindToDescriptorSet(vk::Device device, vk::DescriptorSet set, ResourceType type, uint32_t binding)
+{
+
+    vk::DescriptorImageInfo imageInfo = {};
+    imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    imageInfo.sampler = this->sampler;
+    imageInfo.imageView = this->view;
+
+    vk::WriteDescriptorSet writeDescriptorSet = {};
+    writeDescriptorSet.sType = vk::StructureType::eWriteDescriptorSet;
+    writeDescriptorSet.descriptorCount = 1;
+    writeDescriptorSet.descriptorType = convertResourceTypeToDescriptorType(type);
+    writeDescriptorSet.dstArrayElement = 0;
+    writeDescriptorSet.dstBinding = binding;
+    writeDescriptorSet.dstSet = set;
+    writeDescriptorSet.pImageInfo = &imageInfo;
+
+    device.updateDescriptorSets(1, &writeDescriptorSet, 0, nullptr);
+}
+
+EasyVK::DeviceResource::ResourceType EasyVK::Image::View::getVerifiedResourceType(ResourceType type)
+{
+    if(type & DeviceResource::AUTO){
+        return DeviceResource::IMAGE_VIEW;
+    }
+
+    return type;
+}
+
+EasyVK::Image::View::~View()
+{
+    this->device.destroy(this->view);
+    this->device.destroy(this->sampler);
+}

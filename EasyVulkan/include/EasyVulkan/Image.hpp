@@ -6,15 +6,16 @@
 #define EASY_VULKAN_TEST_IMAGE_HPP
 #include <vulkan/vulkan.hpp>
 #include <EasyVulkan/Base.hpp>
+#include <EasyVulkan/DeviceResourceInterface.hpp>
 
 namespace EasyVK{
 
     class Device;
 
-    class Image : AutoFree{
+    class Image{
 
     public:
-        class View : AutoFree{
+        class View : public DeviceResource{
         public:
             ~View();
 
@@ -22,9 +23,13 @@ namespace EasyVK{
             vk::Device device;
             vk::ImageView view;
             vk::Format format;
+            vk::Sampler sampler;
 
         protected:
             void setup(vk::Device device, vk::Format colorFormat, vk::Extent3D size, vk::Image image);
+            virtual bool checkResourceTypeCompatability(ResourceType type) override;
+            virtual void bindToDescriptorSet(vk::Device device, vk::DescriptorSet set, ResourceType type, uint32_t binding) override;
+            virtual ResourceType getVerifiedResourceType(ResourceType type) override;
 
         private:
             friend RenderPass;
@@ -42,12 +47,13 @@ namespace EasyVK{
         vk::Extent3D size;
         uint32_t allocatedSize;
         vk::ImageTiling tiling;
+        vk::ImageLayout layout;
         bool createdFromSwapChain = false;
 
     public:
         void* bind();
         void unbind();
-        View getView();
+        View* getView();
 
     private:
         void createFromSwapChain(vk::Device device, vk::Format format, vk::Extent3D size, vk::Image image);
@@ -57,6 +63,7 @@ namespace EasyVK{
         friend Device;
         friend SwapChain;
         friend RenderPass;
+        friend CommandBuffer;
     };
 }
 

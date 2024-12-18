@@ -11,11 +11,11 @@
 
 namespace EasyVK{
 
-    class ResourceDescriptor : AutoFree{
+    class ResourceDescriptor{
 
     public:
         struct ResourceBindingDescriptor{
-            DeviceResource& resource;
+            DeviceResource* resource;
             DeviceResource::ResourceType type = DeviceResource::AUTO;
         };
 
@@ -30,7 +30,7 @@ namespace EasyVK{
         std::map<uint32_t, DeviceResource::ResourceType> bindingTypes;
 
     public:
-        void updateBinding(uint32_t binding, DeviceResource& resource);
+        void updateBinding(uint32_t binding, DeviceResource* resource);
 
     private:
         void allocateDescriptorPool(vk::Device device,

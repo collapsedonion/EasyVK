@@ -14,7 +14,7 @@ namespace EasyVK{
 
     class Device;
 
-    class Buffer : AutoFree, public DeviceResource{
+    class Buffer : public DeviceResource{
 
     public:
         ~Buffer();

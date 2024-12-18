@@ -6,7 +6,7 @@
 #include <utility>
 
 std::pair<std::vector<vk::VertexInputBindingDescription>, std::vector<vk::VertexInputAttributeDescription>>
-EasyVK::GraphicsPipeline::unwrapVertexBinding(std::vector<VertexBufferBinding> vertexBindings) {
+EasyVK::GraphicsPipeline::unwrapVertexBinding(const std::vector<VertexBufferBinding>& vertexBindings) {
 
     std::vector<vk::VertexInputAttributeDescription> attributeDescription;
     std::vector<vk::VertexInputBindingDescription> bindingDescription;
@@ -57,22 +57,22 @@ EasyVK::GraphicsPipeline::unwrapVertexBinding(std::vector<VertexBufferBinding> v
 }
 
 void EasyVK::GraphicsPipeline::setup(uint32_t attachmentCount, vk::Device device, vk::RenderPass renderPass,
-                                     EasyVK::ResourceDescriptor resourceDescriptor,
-                                     std::pair<Shader, std::string> vertexShader,
-                                     std::pair<Shader, std::string> fragmentShader,
-                                     std::vector<VertexBufferBinding> bufferBinding, vk::PrimitiveTopology topologyType,
+                                     EasyVK::ResourceDescriptor* resourceDescriptor,
+                                     std::pair<Shader*, std::string> vertexShader,
+                                     std::pair<Shader*, std::string> fragmentShader,
+                                     const std::vector<VertexBufferBinding>& bufferBinding, vk::PrimitiveTopology topologyType,
                                      vk::CompareOp depthTestCompareOp, bool counterClockwiseTriangles) {
 
     vk::PipelineShaderStageCreateInfo vertexShaderCreateInfo = {};
     vertexShaderCreateInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
     vertexShaderCreateInfo.stage = vk::ShaderStageFlagBits::eVertex;
-    vertexShaderCreateInfo.module = vertexShader.first.module;
+    vertexShaderCreateInfo.module = vertexShader.first->module;
     vertexShaderCreateInfo.pName = vertexShader.second.c_str();
 
     vk::PipelineShaderStageCreateInfo fragmentShaderCreateInfo = {};
     fragmentShaderCreateInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
     fragmentShaderCreateInfo.stage = vk::ShaderStageFlagBits::eFragment;
-    fragmentShaderCreateInfo.module = fragmentShader.first.module;
+    fragmentShaderCreateInfo.module = fragmentShader.first->module;
     fragmentShaderCreateInfo.pName = fragmentShader.second.c_str();
 
     std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vertexShaderCreateInfo, fragmentShaderCreateInfo};
@@ -134,7 +134,7 @@ void EasyVK::GraphicsPipeline::setup(uint32_t attachmentCount, vk::Device device
     vk::PipelineLayoutCreateInfo layoutCreateInfo = {};
     layoutCreateInfo.sType = vk::StructureType::ePipelineLayoutCreateInfo;
     layoutCreateInfo.setLayoutCount = 1;
-    layoutCreateInfo.pSetLayouts = &resourceDescriptor.descriptorLayout;
+    layoutCreateInfo.pSetLayouts = &(resourceDescriptor->descriptorLayout);
 
     this->layout = device.createPipelineLayout(layoutCreateInfo);
     this->device = device;
@@ -168,8 +168,6 @@ void EasyVK::GraphicsPipeline::setup(uint32_t attachmentCount, vk::Device device
 }
 
 EasyVK::GraphicsPipeline::~GraphicsPipeline() {
-    if(isKilled()) {
-        this->device.destroy(this->pipeline);
-        this->device.destroy(this->layout);
-    }
+    this->device.destroy(this->pipeline);
+    this->device.destroy(this->layout);
 }

@@ -13,7 +13,8 @@ namespace EasyVK{
     class Instance{
     public:
         enum VULKAN_VERSION{
-            V1_0
+            V1_0,
+            V1_3
         };
     private:
         std::set<std::string> supported_layers;
@@ -31,7 +32,7 @@ namespace EasyVK{
         bool layerEnabled(const std::string& name);
         bool extensionEnabled(const std::string& name);
 
-        PhysicalDevice* getPhysicalDevice(EasyVK::PhysicalDevice::DeviceType type, EasyVK::Features features);
+        PhysicalDevice getPhysicalDevice(EasyVK::PhysicalDevice::DeviceType type, EasyVK::Features features);
 
     private:
         friend GLFWHelper;

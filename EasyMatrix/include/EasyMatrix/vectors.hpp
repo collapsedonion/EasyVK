@@ -1,6 +1,7 @@
 #pragma once
 #include <stddef.h> 
 #include <math.h>
+#include <string>
 
 namespace EasyMatrix{
     template<typename T, size_t s>
@@ -16,6 +17,18 @@ namespace EasyMatrix{
 
         T& operator [] (size_t id){
             return content[id];
+        }
+
+        const std::string toString(){
+            std::string res;
+
+            for(uint32_t i = 0; i < getSize(); i++){
+                res += "[";
+                res += std::to_string(this[i]);
+                res += "]";
+            }
+
+            return res;
         }
     };
 
@@ -39,6 +52,18 @@ namespace EasyMatrix{
                 return v;
             }
             return u;
+        }
+
+        std::string toString(){
+            std::string res;
+
+            for(uint32_t i = 0; i < getSize(); i++){
+                res += "[";
+                res += std::to_string(this[i]);
+                res += "]";
+            }
+
+            return res;
         }
     };
 
@@ -65,6 +90,18 @@ namespace EasyMatrix{
                 return z;
             }
             return x;
+        }
+
+        const std::string toString(){
+            std::string res;
+
+            for(uint32_t i = 0; i < getSize(); i++){
+                res += "[";
+                res += std::to_string((*this)[i]);
+                res += "]";
+            }
+
+            return res;
         }
     };
 
@@ -94,6 +131,18 @@ namespace EasyMatrix{
                 return w;
             }
             return x;
+        }
+
+        const std::string toString(){
+            std::string res;
+
+            for(uint32_t i = 0; i < getSize(); i++){
+                res += "[";
+                res += std::to_string(this[i]);
+                res += "]";
+            }
+
+            return res;
         }
     };
 
@@ -214,6 +263,17 @@ namespace EasyMatrix{
         res = sqrt(res);
         return res;
     }
+
+    template<typename T, size_t s>
+    float dotProduct(Vector<T, s> vector, Vector<T, s> vector2){
+        float res = 0;
+            
+        for(size_t i = 0; i < vector.getSize(); i++){
+            res += vector[i] * vector2[i];
+        }
+
+        return res;
+    } 
 
     template<typename T, size_t s>
     Vector<T, s> vectorNormalise(Vector<T, s> vector){

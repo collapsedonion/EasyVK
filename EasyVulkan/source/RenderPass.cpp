@@ -3,7 +3,7 @@
 //
 #include <EasyVulkan/RenderPass.hpp>
 
-void EasyVK::RenderPass::setup(const std::vector<EasyVK::Image>& images,
+void EasyVK::RenderPass::setup(const std::vector<std::pair<EasyVK::Image*, ImageOp>>& images,
                                vk::Device device) {
     std::vector<vk::AttachmentDescription> attachments;
     std::vector<vk::ImageView> viewAttachments;
@@ -16,15 +16,29 @@ void EasyVK::RenderPass::setup(const std::vector<EasyVK::Image>& images,
 
     long long attachmentId = 0;
 
-    std::vector<EasyVK::Image::View> views;
+    std::vector<EasyVK::Image::View*> views;
 
     this->myFrameBuffer = {};
 
-    for(auto image : images){
+    for(auto imageSettings : images){
+        auto image = imageSettings.first; 
         vk::AttachmentDescription createInfo = {};
-        createInfo.format = image.colorFormat;
-        createInfo.initialLayout = vk::ImageLayout::eUndefined;
-        createInfo.loadOp = vk::AttachmentLoadOp::eClear;
+        createInfo.format = image->colorFormat;
+
+        switch (imageSettings.second)
+        {
+        case ImageOp::Clear:
+            createInfo.loadOp = vk::AttachmentLoadOp::eClear;
+            createInfo.initialLayout = vk::ImageLayout::eUndefined;
+            break;
+        case ImageOp::Load:
+            createInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+            createInfo.initialLayout = vk::ImageLayout::eColorAttachmentOptimal;
+        
+        default:
+            break;
+        }
+
         createInfo.stencilStoreOp = vk::AttachmentStoreOp::eStore;
         createInfo.stencilLoadOp = vk::AttachmentLoadOp::eClear;
         createInfo.storeOp = vk::AttachmentStoreOp::eStore;
@@ -33,15 +47,19 @@ void EasyVK::RenderPass::setup(const std::vector<EasyVK::Image>& images,
         attachmentReference.attachment = attachmentId;
         attachmentId++;
 
-        if(image.colorFormat == vk::Format::eD32SfloatS8Uint ||
-           image.colorFormat == vk::Format::eD32Sfloat ||
-           image.colorFormat == vk::Format::eD24UnormS8Uint ||
-           image.colorFormat == vk::Format::eD16UnormS8Uint ||
-           image.colorFormat == vk::Format::eD16Unorm){
+        if(image->colorFormat == vk::Format::eD32SfloatS8Uint ||
+           image->colorFormat == vk::Format::eD32Sfloat ||
+           image->colorFormat == vk::Format::eD24UnormS8Uint ||
+           image->colorFormat == vk::Format::eD16UnormS8Uint ||
+           image->colorFormat == vk::Format::eD16Unorm){
             vk::ClearValue clearValue;
             clearValue.depthStencil = vk::ClearDepthStencilValue(1, 0);
             values.push_back(clearValue);
             createInfo.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+            if(imageSettings.second == ImageOp::Load){
+                createInfo.initialLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+            }
 
             attachmentReference.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
             depthAttachment = attachmentReference;
@@ -51,22 +69,22 @@ void EasyVK::RenderPass::setup(const std::vector<EasyVK::Image>& images,
             clearValue.color = vk::ClearColorValue(0,0,0,1);
             values.push_back(clearValue);
             imageAttachmentCount++;
-            createInfo.finalLayout = vk::ImageLayout::ePresentSrcKHR;
-            attachmentReference.layout = vk::ImageLayout::ePresentSrcKHR;
+            createInfo.finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+            attachmentReference.layout = vk::ImageLayout::eColorAttachmentOptimal;
             attachmentReferences.push_back(attachmentReference);
         }
 
         attachments.push_back(createInfo);
-        views.push_back(image.getView());
-        viewAttachments.push_back(views.back().view);
+        views.push_back(image->getView());
+        viewAttachments.push_back(views.back()->view);
 
-        this->myFrameBuffer.formats.push_back(image.colorFormat);
+        this->myFrameBuffer.formats.push_back(image->colorFormat);
 
-        if(image.size.width < minWidth){
-            minWidth = image.size.width;
+        if(image->size.width < minWidth){
+            minWidth = image->size.width;
         }
-        if(image.size.height < minHeight){
-            minHeight = image.size.height;
+        if(image->size.height < minHeight){
+            minHeight = image->size.height;
         }
     }
 
@@ -117,29 +135,27 @@ void EasyVK::RenderPass::setup(const std::vector<EasyVK::Image>& images,
 }
 
 EasyVK::RenderPass::~RenderPass() {
-    if(isKilled()) {
-        for(auto elem : frameBuffer) {
-            device.destroy(elem);
-        }
-        device.destroy(renderPass);
+    for(auto elem : frameBuffer) {
+        device.destroy(elem);
     }
+    device.destroy(renderPass);
 }
 
-EasyVK::GraphicsPipeline EasyVK::RenderPass::createGraphicsPipeline(EasyVK::ResourceDescriptor resourceDescriptor,
-                                                                     std::pair<Shader, std::string> vertexShader,
-                                                                     std::pair<Shader, std::string> fragmentShader,
-                                                                     std::vector<GraphicsPipeline::VertexBufferBinding> bufferBinding,
+EasyVK::GraphicsPipeline* EasyVK::RenderPass::createGraphicsPipeline(EasyVK::ResourceDescriptor* resourceDescriptor,
+                                                                     std::pair<Shader*, std::string> vertexShader,
+                                                                     std::pair<Shader*, std::string> fragmentShader,
+                                                                     const std::vector<GraphicsPipeline::VertexBufferBinding>& bufferBinding,
                                                                      vk::PrimitiveTopology topologyType,
                                                                      vk::CompareOp depthTestCompareOp,
                                                                      bool counterClockwiseTriangles) {
-    auto graphicsPipeline = GraphicsPipeline();
-    graphicsPipeline.setup(this->imageAttachmentCount, device, renderPass, resourceDescriptor, vertexShader, fragmentShader, bufferBinding, topologyType, depthTestCompareOp, counterClockwiseTriangles);
+    auto graphicsPipeline = new GraphicsPipeline();
+    graphicsPipeline->setup(this->imageAttachmentCount, device, renderPass, resourceDescriptor, vertexShader, fragmentShader, bufferBinding, topologyType, depthTestCompareOp, counterClockwiseTriangles);
     return graphicsPipeline;
 }
 
-void EasyVK::RenderPass::addFrameBuffer(const std::vector<EasyVK::Image> &images) {
+void EasyVK::RenderPass::addFrameBuffer(const std::vector<EasyVK::Image*> &images) {
 
-    std::vector<EasyVK::Image::View> views;
+    std::vector<EasyVK::Image::View*> views;
     std::vector<vk::ImageView> nativeViews;
     vk::Extent2D size;
     size.width = UINT32_MAX;
@@ -147,19 +163,19 @@ void EasyVK::RenderPass::addFrameBuffer(const std::vector<EasyVK::Image> &images
 
     for(size_t i = 0; i < images.size(); i++){
         auto image = images[i];
-        views.push_back(image.getView());
-        nativeViews.push_back(views.back().view);
+        views.push_back(image->getView());
+        nativeViews.push_back(views.back()->view);
 
-        if(this->myFrameBuffer.formats[i] != image.colorFormat){
+        if(this->myFrameBuffer.formats[i] != image->colorFormat){
             throw std::runtime_error("Invalid image format");
         }
 
-        if(size.width > image.size.width){
-            size.width = image.size.width;
+        if(size.width > image->size.width){
+            size.width = image->size.width;
         }
 
-        if(size.height > image.size.height){
-            size.height = image.size.height;
+        if(size.height > image->size.height){
+            size.height = image->size.height;
         }
     }
 
@@ -179,7 +195,13 @@ void EasyVK::RenderPass::addFrameBuffer(const std::vector<EasyVK::Image> &images
 
 void EasyVK::RenderPass::freeFrameBuffers() {
     renderArea.clear();
-    views.clear();
+
+    for(auto view : views){
+        for(auto v : view.second){
+            delete v;
+        }
+    }
+
     for(auto elem : frameBuffer){
         device.destroy(elem);
     }

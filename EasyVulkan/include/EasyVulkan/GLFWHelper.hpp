@@ -15,9 +15,9 @@ namespace EasyVK{
 
     class GLFWHelper{
     public:
-        inline static vk::SurfaceKHR getGLFWSurface(GLFWwindow* window, EasyVK::Instance instance){
+        inline static vk::SurfaceKHR getGLFWSurface(GLFWwindow* window, EasyVK::Instance* instance){
             VkSurfaceKHR surface;
-            glfwCreateWindowSurface(instance.instance, window, nullptr, &surface);
+            glfwCreateWindowSurface(instance->instance, window, nullptr, &surface);
             return surface;
         }
     };

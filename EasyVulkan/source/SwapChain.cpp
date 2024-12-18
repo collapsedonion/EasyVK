@@ -6,17 +6,16 @@
 #include <set>
 
 std::set<vk::Format> preferableFormats = {
+        vk::Format::eB8G8R8A8Srgb,
         vk::Format::eR8G8B8A8Srgb,
-        vk::Format::eR32G32B32Sfloat,
 };
 
 std::set<vk::ColorSpaceKHR> preferableColorSpace = {
         vk::ColorSpaceKHR::eSrgbNonlinear,
-        vk::ColorSpaceKHR::eHdr10HlgEXT
 };
 
 void EasyVK::SwapChain::setup(vk::PhysicalDevice physicalDevice, vk::Device device, vk::SurfaceKHR surface,
-                              std::set<uint32_t> queueFamilies) {
+                              const std::set<uint32_t>& queueFamilies) {
 
     vk::SurfaceCapabilitiesKHR surfaceCapabilitiesKhr = physicalDevice.getSurfaceCapabilitiesKHR(surface);
 
@@ -55,13 +54,13 @@ void EasyVK::SwapChain::setup(vk::PhysicalDevice physicalDevice, vk::Device devi
     createInfoKhr.imageArrayLayers = 1;
     createInfoKhr.queueFamilyIndexCount = queueFamilies.size();
     createInfoKhr.pQueueFamilyIndices = queueFamiliesV.data();
-    createInfoKhr.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
+    createInfoKhr.imageUsage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst;
     createInfoKhr.imageSharingMode = queueFamiliesV.size() == 1 ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
     createInfoKhr.preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
     createInfoKhr.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
     createInfoKhr.presentMode = vk::PresentModeKHR::eFifo;
     createInfoKhr.clipped = vk::False;
-    createInfoKhr.oldSwapchain = swapChain;
+    createInfoKhr.oldSwapchain = VK_NULL_HANDLE;
 
     this->swapChain = device.createSwapchainKHR(createInfoKhr);
     this->queueFamilies = std::move(queueFamilies);
@@ -70,15 +69,26 @@ void EasyVK::SwapChain::setup(vk::PhysicalDevice physicalDevice, vk::Device devi
     this->device = device;
     this->size = vk::Extent3D(createInfoKhr.imageExtent.width, createInfoKhr.imageExtent.height, 1);
     this->format = createInfoKhr.imageFormat;
+
+    if(presentaionFence != VK_NULL_HANDLE){
+        this->device.waitForFences({this->presentaionFence}, false, UINT64_MAX);
+        this->device.destroy(this->presentaionFence);
+    }
+
+    vk::FenceCreateInfo fenceCreateInfo = {};
+    fenceCreateInfo.flags = vk::FenceCreateFlagBits::eSignaled;
+
+    this->presentaionFence = device.createFence(fenceCreateInfo);
+
 }
 
-std::vector<EasyVK::Image> EasyVK::SwapChain::getImages() {
+std::vector<EasyVK::Image*> EasyVK::SwapChain::getImages() {
     std::vector<vk::Image> images = device.getSwapchainImagesKHR(swapChain);
-    std::vector<EasyVK::Image> result;
+    std::vector<EasyVK::Image*> result;
 
     for(auto image : images){
-        EasyVK::Image newImage = Image();
-        newImage.createFromSwapChain(device, format, size, image);
+        EasyVK::Image* newImage = new Image();
+        newImage->createFromSwapChain(device, format, size, image);
         result.push_back(newImage);
     }
 
@@ -86,37 +96,40 @@ std::vector<EasyVK::Image> EasyVK::SwapChain::getImages() {
 }
 
 void EasyVK::SwapChain::recreate() {
+    this->device.destroy(swapChain);
     setup(physicalDevice, device, surface, queueFamilies);
 }
 
 EasyVK::SwapChain::~SwapChain() {
-    if(isKilled()){
         device.destroy(swapChain);
-    }
+    device.destroy(presentaionFence);
 }
 
-uint32_t EasyVK::SwapChain::nextImage() {
-    return device.acquireNextImageKHR(swapChain, UINT64_MAX).value;
+std::pair<uint32_t, vk::Result> EasyVK::SwapChain::nextImage() {
+    device.resetFences(presentaionFence);
+    auto result = device.acquireNextImageKHR(swapChain, UINT64_MAX, {}, {presentaionFence});
+
+    return {result.value, result.result};
 }
 
-void EasyVK::SwapChain::present(uint32_t imageId, const std::vector<CommandBuffer>& awaitFor) {
+void EasyVK::SwapChain::waitForPresentEnd()
+{
+    device.waitForFences({presentaionFence}, true, UINT64_MAX);
+}
+
+vk::Result EasyVK::SwapChain::present(uint32_t imageId)
+{
     vk::PresentInfoKHR presentInfoKhr = {};
     presentInfoKhr.waitSemaphoreCount = 0;
     presentInfoKhr.swapchainCount = 1;
     presentInfoKhr.pSwapchains = &swapChain;
     presentInfoKhr.pImageIndices = &imageId;
-    presentInfoKhr.waitSemaphoreCount = awaitFor.size();
-    std::vector<vk::Semaphore> awaitSemaphores;
-    awaitSemaphores.reserve(awaitFor.size());
-    for(auto& commandBuffer : awaitFor){
-        awaitSemaphores.push_back(commandBuffer.mySemaphore);
-    }
-
-    presentInfoKhr.pWaitSemaphores = awaitSemaphores.data();
-
+    
     auto result =  presentQueue.presentKHR(presentInfoKhr);
+    return result;
 }
 
-vk::Extent2D EasyVK::SwapChain::getRenderSize() {
+vk::Extent2D EasyVK::SwapChain::getRenderSize()
+{
     return vk::Extent2D(size.width, size.height);
 }

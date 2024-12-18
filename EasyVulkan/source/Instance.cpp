@@ -17,6 +17,9 @@ EasyVK::Instance::Instance(const std::string& application_name,
         case V1_0:
             applicationInfo.apiVersion = VK_API_VERSION_1_0;
             break;
+        case V1_3:
+            applicationInfo.apiVersion = VK_API_VERSION_1_3;
+            break;
     }
 
 
@@ -59,10 +62,10 @@ bool EasyVK::Instance::extensionEnabled(const std::string &name) {
     return supported_extensions.contains(name);
 }
 
-EasyVK::PhysicalDevice * EasyVK::Instance::getPhysicalDevice(
+EasyVK::PhysicalDevice EasyVK::Instance::getPhysicalDevice(
         EasyVK::PhysicalDevice::DeviceType type,
         EasyVK::Features features) {
-    auto* device = new EasyVK::PhysicalDevice();
-    device->setupWithDesired(type, features, this->instance);
+    auto device = EasyVK::PhysicalDevice();
+    device.setupWithDesired(type, features, this->instance);
     return device;
 }

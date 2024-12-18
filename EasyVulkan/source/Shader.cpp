@@ -14,7 +14,5 @@ void EasyVK::Shader::setup(vk::Device device, const std::vector<uint32_t>& data)
 }
 
 EasyVK::Shader::~Shader() {
-    if(isKilled()){
-        this->device.destroy(this->module);
-    }
+    this->device.destroy(this->module);
 }

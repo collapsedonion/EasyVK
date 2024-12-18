@@ -4,13 +4,13 @@
 #include <EasyVulkan/ComputePipeline.hpp>
 
 void
-EasyVK::ComputePipeline::setup(std::pair<Shader, std::string> shader, EasyVK::ResourceDescriptor resourceDescriptor,
+EasyVK::ComputePipeline::setup(std::pair<Shader*, std::string> shader, EasyVK::ResourceDescriptor* resourceDescriptor,
                                vk::Device device) {
 
     vk::PipelineLayoutCreateInfo layoutCreateInfo = {};
     layoutCreateInfo.sType = vk::StructureType::ePipelineLayoutCreateInfo;
     layoutCreateInfo.setLayoutCount = 1;
-    layoutCreateInfo.pSetLayouts = &resourceDescriptor.descriptorLayout;
+    layoutCreateInfo.pSetLayouts = &(resourceDescriptor->descriptorLayout);
 
     this->device = device;
     this->layout = device.createPipelineLayout(layoutCreateInfo);
@@ -19,7 +19,7 @@ EasyVK::ComputePipeline::setup(std::pair<Shader, std::string> shader, EasyVK::Re
     shaderStageCreateInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
     shaderStageCreateInfo.stage = vk::ShaderStageFlagBits::eCompute;
     shaderStageCreateInfo.pName = shader.second.data();
-    shaderStageCreateInfo.module = shader.first.module;
+    shaderStageCreateInfo.module = shader.first->module;
 
     vk::ComputePipelineCreateInfo computePipelineCreateInfo = {};
     computePipelineCreateInfo.sType = vk::StructureType::eComputePipelineCreateInfo;
@@ -30,8 +30,6 @@ EasyVK::ComputePipeline::setup(std::pair<Shader, std::string> shader, EasyVK::Re
 }
 
 EasyVK::ComputePipeline::~ComputePipeline() {
-    if(isKilled()) {
-        this->device.destroy(this->layout);
-        this->device.destroy(this->pipeline);
-    }
+    this->device.destroy(this->layout);
+    this->device.destroy(this->pipeline);  
 }

@@ -13,7 +13,7 @@
 namespace EasyVK{
     class Device;
 
-    class ComputePipeline : AutoFree{
+    class ComputePipeline{
 
     public:
         ~ComputePipeline();
@@ -24,7 +24,7 @@ namespace EasyVK{
         vk::PipelineLayout layout;
 
     protected:
-        void setup(std::pair<Shader, std::string> shader, ResourceDescriptor resourceDescriptor, vk::Device device);
+        void setup(std::pair<Shader*, std::string> shader, ResourceDescriptor* resourceDescriptor, vk::Device device);
 
     private:
         friend Device;

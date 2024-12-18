@@ -3,6 +3,7 @@
 #include <EasyMatrix/vectors.hpp>
 #include <EasyMatrix/BasicMath.hpp>
 #include <math.h>
+#include <string>
 
 namespace EasyMatrix{
 
@@ -22,6 +23,21 @@ namespace EasyMatrix{
 
         Vector<T, row_count>& operator [](long long i){
             return content[i];
+        }
+
+        std::string toString(){
+            std::string result = {};
+            
+            for(size_t i = 0; i < row_count; i++){
+                for(size_t j = 0; j < column_count; j++){
+                    result += "[";
+                    result += std::to_string(content[j][i]);
+                    result += "]";
+                }
+                result += "\n";
+            }
+
+            return result;
         }
     };
 
@@ -206,12 +222,31 @@ namespace EasyMatrix{
 
         float aspect = std::min(width, height) / std::max(width, height);
 
-        res[0][0] = (1 / tan(fov / 2)) / aspect;
-        res[1][1] = 1 / tan(fov / 2);
+        res[0][0] = (1.0f / tan(fov / 2.0f));
+        res[1][1] = (1.0f / tan(fov / 2.0f));
+
+        if(width > height){
+            res[1][1] /= aspect;
+        }else{
+            res[0][0] /= aspect;
+        }
+
         res[2][2] = (farDist + nearDist) / (farDist - nearDist);
-        res[2][3] = 1;
-        res[3][2] = -(2 * farDist * nearDist) / (farDist - nearDist);
+        res[2][3] = 1.0f;
+        res[3][2] = -(2.0f * farDist * nearDist) / (farDist - nearDist);
 
         return res;
+    }
+
+    inline EasyMatrix::Vector4f operator * (EasyMatrix::Matrix4x4f matrix, EasyMatrix::Vector4f vector){
+        EasyMatrix::Vector4f result = {};
+        
+        for(uint8_t i = 0; i < 4; i++){
+            for(uint8_t n = 0; n < 4; n++){
+                result[i] += matrix[n][i] * vector[n];
+            }
+        }
+
+        return result;
     }
 };

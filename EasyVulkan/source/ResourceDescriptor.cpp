@@ -30,14 +30,14 @@ void EasyVK::ResourceDescriptor::allocateDescriptorPool(vk::Device device,
     std::vector<vk::DescriptorPoolSize> typesToInclude;
     typesToInclude.reserve(bindings.size());
 
-    for(const auto& elem : bindings){
-        if(!elem.second.resource.checkResourceTypeCompatability(elem.second.type)){
+    for(auto elem : bindings){
+        if(!elem.second.resource->checkResourceTypeCompatability(elem.second.type)){
             throw std::runtime_error("Unsupported resource type");
         }
 
         vk::DescriptorPoolSize newSize;
         newSize.descriptorCount = 1;
-        newSize.type = elem.second.resource.convertResourceTypeToDescriptorType(elem.second.type);
+        newSize.type = elem.second.resource->convertResourceTypeToDescriptorType(elem.second.type);
         typesToInclude.push_back(newSize);
     }
 
@@ -50,8 +50,8 @@ void EasyVK::ResourceDescriptor::allocateDescriptorPool(vk::Device device,
     bindingsForCreateInfo.reserve(bindings.size());
 
     for(const auto& binding : bindings){
-        bindingsForCreateInfo.push_back(binding.second.resource.getBinding(binding.first, binding.second.type));
-        this->bindingTypes.insert({binding.first, binding.second.resource.getVerifiedResourceType(binding.second.type)});
+        bindingsForCreateInfo.push_back(binding.second.resource->getBinding(binding.first, binding.second.type));
+        this->bindingTypes.insert({binding.first, binding.second.resource->getVerifiedResourceType(binding.second.type)});
     }
 
     vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
@@ -70,15 +70,13 @@ void EasyVK::ResourceDescriptor::allocateDescriptorPool(vk::Device device,
     descriptorSet = device.allocateDescriptorSets({allocateInfo})[0];
 }
 
-void EasyVK::ResourceDescriptor::updateBinding(uint32_t binding, EasyVK::DeviceResource &resource) {
-    if(resource.checkResourceTypeCompatability(this->bindingTypes[binding])){
-        resource.bindToDescriptorSet(this->device, this->descriptorSet, this->bindingTypes[binding], binding);
+void EasyVK::ResourceDescriptor::updateBinding(uint32_t binding, EasyVK::DeviceResource* resource) {
+    if(resource->checkResourceTypeCompatability(this->bindingTypes[binding])){
+        resource->bindToDescriptorSet(this->device, this->descriptorSet, this->bindingTypes[binding], binding);
     }
 }
 
 EasyVK::ResourceDescriptor::~ResourceDescriptor() {
-    if(isKilled()) {
-        device.destroy(this->descriptorLayout);
-        device.destroy(this->descriptorPool);
-    }
+    device.destroy(this->descriptorLayout);
+    device.destroy(this->descriptorPool);
 }

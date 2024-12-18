@@ -14,7 +14,7 @@
 
 namespace EasyVK{
 
-    class GraphicsPipeline : AutoFree{
+    class GraphicsPipeline{
     public:
         struct VertexBufferBinding{
             enum AttributeType{
@@ -48,17 +48,17 @@ namespace EasyVK{
 
     private:
         static std::pair<std::vector<vk::VertexInputBindingDescription>, std::vector<vk::VertexInputAttributeDescription>>
-        unwrapVertexBinding(std::vector<VertexBufferBinding> vertexBindings);
+        unwrapVertexBinding(const std::vector<VertexBufferBinding>& vertexBindings);
 
     protected:
         void setup(
                 uint32_t attachmentCount,
                 vk::Device device,
                 vk::RenderPass renderPass,
-                ResourceDescriptor resourceDescriptor,
-                std::pair<Shader, std::string> vertexShader,
-                std::pair<Shader, std::string> fragmentShader,
-                std::vector<VertexBufferBinding> bufferBinding,
+                ResourceDescriptor* resourceDescriptor,
+                std::pair<Shader*, std::string> vertexShader,
+                std::pair<Shader*, std::string> fragmentShader,
+                const std::vector<VertexBufferBinding>& bufferBinding,
                 vk::PrimitiveTopology topologyType,
                 vk::CompareOp depthTestCompareOp = vk::CompareOp::eNever,
                 bool counterClockwiseTriangles = false
