@@ -14,8 +14,6 @@ set(EASY_VULKAN_INCLUDE ${EASY_VULKAN_PATH}/include/)
 
 FILE(GLOB EASY_VULKAN_SOURCE ${EASY_VULKAN_PATH}/source/*.cpp)
 add_library(easy_vulkan ${EASY_VULKAN_SOURCE} ${EASY_VULKAN_INCLUDE_FILES})
-set(LIBRARY_OUTPUT_PATH ${EASY_VULKAN_PATH}/lib)
-
 
 if(NOT Vulkan_FOUND)
     message(ERROR "Failed to find Vulkan lib")
