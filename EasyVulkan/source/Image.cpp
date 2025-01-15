@@ -182,3 +182,7 @@ EasyVK::Image::View::~View()
     this->device.destroy(this->view);
     this->device.destroy(this->sampler);
 }
+
+vk::Format EasyVK::Image::getImageFormat(){
+    return this->colorFormat;
+}

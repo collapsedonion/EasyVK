@@ -53,6 +53,7 @@ namespace EasyVK{
     public:
         void* bind();
         void unbind();
+        vk::Format getImageFormat();
         View* getView();
 
     private:

@@ -392,7 +392,7 @@ EasyVK::SwapChain* EasyVK::Device::createSwapChain(vk::SurfaceKHR surfaceKhr, ui
 
     auto swapChain = new EasyVK::SwapChain();
     swapChain->presentQueue = presentQueue.second[queueId];
-    swapChain->setup(physicalDevice, device, surfaceKhr, {presentQueue.first, graphics.first});
+    swapChain->setup(physicalDevice, device, surfaceKhr, {presentQueue.first, graphics.first, transfer.first});
     return swapChain;
 }
 
